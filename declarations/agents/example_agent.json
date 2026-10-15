@@ -1,0 +1,204 @@
+// ==============================================================================
+// ARCHIVO DE EJEMPLO: Declaración de Agente para el Harness de ML
+// Este archivo sirve como plantilla y referencia para la declaración de agentes.
+// Nota: Se ha retirado el bloque de delegación interna; el grafo de flujo gobierna las transiciones.
+// ==============================================================================
+{
+  "schema_version": "1.0.0",
+  "id": "eda_agent",
+  "name": "Data Auditor & Exploratory Analysis Specialist",
+  "version": "0.1.0",
+  "description": "Especialista en auditoría de calidad de datos, detección de valores nulos, distribución de clases, correlaciones y prevención de fugas de datos (data leakage).",
+  "enabled": true,
+
+  "role": {
+    "type": "specialist",
+    "permissions": {
+      "can_receive_tasks": true,
+      "can_use_tools": true,
+      "can_use_expert_tools": false,
+      "can_use_rag": false,
+      "can_use_data_knowledge": false,
+      "can_write_external": false,
+      "can_finish_task": true
+    },
+    "reports_to": "consolidator_agent"
+  },
+
+  "prompt": {
+    "template_format": "mustache",
+    "template": "# ROL\n{{role}}\n\n# MISIÓN PERMANENTE\n{{task}}\n\n# CONTEXTO DEL PROBLEMA (PIZARRA)\n{{inputs}}\n\n# REGLAS INNEGOCIABLES\n{{rules}}\n\n# HERRAMIENTAS ASIGNADAS\n{{tools}}\n\n# FORMATO DE RESPUESTA\n{{output_format}}",
+    "role": "Eres un científico de datos senior especializado en Exploratory Data Analysis (EDA) y auditoría rigurosa de calidad de datos para Machine Learning.",
+    "task": "Inspeccionar empíricamente el dataset especificado en la pizarra. Analizar dimensiones, tipos de columnas, valores nulos, cardinalidad, posibles fugas de datos y la distribución de la variable objetivo. Producir un reporte estructurado y sugerir la estrategia de validación adecuada.",
+    "rules": [
+      "Ejecuta código Python real usando 'execute_python' para verificar las propiedades de los datos; no asumas ni inventes valores.",
+      "Identifica columnas no predictivas (IDs, timestamps constantes o columnas con >90% de valores faltantes) y recomiéndalas para exclusión.",
+      "Revisa detalladamente la distribución del target para alertar sobre desbalance de clases si aplica.",
+      "Proporciona siempre en 'markdown_summary' un resumen en Markdown limpio y estructurado listo para pegarse en blackboard.md.",
+      "Responde obligatoriamente en el formato JSON indicado en output_format."
+    ],
+    "inputs": [
+      {
+        "name": "problem_spec",
+        "type": "string",
+        "required": true,
+        "description": "Contenido de la sección problem_spec de blackboard.md (ruta de datos, target, métrica y restricciones)."
+      }
+    ],
+    "tools": {
+      "render": "auto_from_bindings",
+      "description": "Herramientas de sandbox para inspección y cómputo sobre el dataset.",
+      "usage_policy": [
+        "Usa execute_python para extraer estadísticas resumidas (shape, dtypes, missing values, target value_counts).",
+        "No generes ventanas gráficas interactivas (ej. plt.show); en su lugar imprime métricas y tablas estadísticas descriptivas.",
+        "Si un script falla con traceback, analiza el error, corrígelo e inténtalo una vez más."
+      ]
+    },
+    "output_format": {
+      "type": "json",
+      "schema": {
+        "type": "object",
+        "required": ["status", "result", "warnings"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["completed", "partial", "failed"]
+          },
+          "result": {
+            "type": "object",
+            "required": [
+              "dataset_shape",
+              "target_distribution",
+              "missing_values_summary",
+              "columns_to_drop",
+              "recommended_validation_split",
+              "markdown_summary"
+            ],
+            "properties": {
+              "dataset_shape": { "type": "string", "description": "Dimensiones del dataset (ej. 10000 filas, 14 columnas)" },
+              "target_distribution": { "type": "string", "description": "Distribución de clases o estadísticas del target continuo" },
+              "missing_values_summary": { "type": "array", "items": { "type": "string" }, "description": "Lista de columnas con nulos y su porcentaje" },
+              "columns_to_drop": { "type": "array", "items": { "type": "string" }, "description": "Columnas candidatas a descartar por baja calidad o fuga" },
+              "recommended_validation_split": { "type": "string", "description": "Estrategia recomendada (ej. StratifiedKFold 5 splits)" },
+              "markdown_summary": { "type": "string", "description": "Texto Markdown que el runtime insertará en la sección eda_insights de blackboard.md" }
+            }
+          },
+          "missing_data": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+
+  "tools": [
+    {
+      "tool_id": "execute_python",
+      "enabled": true,
+      "access": "python",
+      "usage_hint": "Úsala para correr scripts con pandas, numpy y scipy que auditen el dataset en disco.",
+      "requires_approval": false,
+      "max_calls_per_task": 5,
+      "timeout_s": 60
+    }
+  ],
+
+  "expert_tools": [],
+
+  "knowledge": {
+    "rag": { "enabled": false },
+    "data_knowledge": { "enabled": false }
+  },
+
+  "model": {
+    "provider": "google_genai",
+    "deployment": "remote",
+    "model_name": "gemini-2.5-pro",
+    "connection": {
+      "base_url": null,
+      "api_key_env": "GEMINI_API_KEY",
+      "timeout_s": 120,
+      "max_retries": 2,
+      "headers": {},
+      "proxy_env": null
+    },
+    "parameters": {
+      "temperature": 0.1,
+      "top_p": null,
+      "max_tokens": 4096,
+      "stop": [],
+      "seed": 42
+    },
+    "capabilities": {
+      "tool_calling": true,
+      "structured_output": true,
+      "streaming": true,
+      "vision": false
+    },
+    "billing": {
+      "paid": false,
+      "currency": "USD"
+    },
+    "fallback": []
+  },
+
+  "memory": {
+    "short_term": {
+      "enabled": true,
+      "backend": "memory",
+      "path": null,
+      "max_messages": 20
+    },
+    "long_term": {
+      "enabled": false
+    }
+  },
+
+  "guardrails": {
+    "disclaimer": null,
+    "sensitive_data": {
+      "redact_in_logs": true,
+      "allowed_identifiers": []
+    },
+    "human_in_the_loop": {
+      "enabled": false
+    },
+    "forbidden_actions": [
+      "Eliminar o sobreescribir los archivos de datos originales en disco",
+      "Intentar realizar conexiones a servicios externos no autorizados"
+    ],
+    "output_validation": {
+      "enforce_schema": true,
+      "on_failure": "retry",
+      "max_retries": 2
+    }
+  },
+
+  "runtime": {
+    "max_iterations": 6,
+    "timeout_s": 240,
+    "parallel_tool_calls": false,
+    "streaming": true,
+    "adapters": {}
+  },
+
+  "observability": {
+    "log_level": "INFO",
+    "tracing": {
+      "enabled": false,
+      "provider": "none"
+    }
+  },
+
+  "metadata": {
+    "owner": "Task-Driven Harness",
+    "created_at": "2026-10-15",
+    "updated_at": "2026-10-15",
+    "tags": ["eda", "tabular_ml", "specialist", "quality_audit"]
+  }
+}

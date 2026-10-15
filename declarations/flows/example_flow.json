@@ -1,0 +1,104 @@
+// ==============================================================================
+// ARCHIVO DE EJEMPLO: Esquema de Grafo de Flujo Conversacional
+// Este archivo sirve como plantilla y referencia para el diseño de flujos en el harness.
+// ==============================================================================
+{
+  "$schema_description": "Especificación del Grafo de Flujo Conversacional para el Harness de ML",
+  "header": {
+    "flow_id": "flow_ml_tabular_iterative_v1",
+    "name": "Flujo Iterativo de Machine Learning Tabular con Ciclo de Optimización",
+    "version": "1.0.0",
+    "author": "Task-Driven Harness Architecture",
+    "description": "Grafo conversacional y de control diseñado para resolver problemas de ML tabular. Inicia con análisis exploratorio de datos (EDA), transiciona a un ciclo iterativo y bidireccional entre Ingeniería de Características y Modelado/Validación, y concluye en un Agente Consolidador que evalúa los resultados y formula la decisión final.",
+    "graph_properties": {
+      "is_cyclic": true,
+      "supports_bidirectional_dialogue": true,
+      "loop_prevention_mechanism": "Control jerárquico de 3 niveles: (1) límite global de turnos para todo el flujo, (2) límite de visitas máximas por nodo individual, y (3) límite de iteraciones por ciclo con condición de continuidad y ruta de escape (fallback) forzada hacia el consolidador.",
+      "blackboard_integration": "Cada agente lee el estado acumulado en blackboard.md y escribe sus contribuciones en su sección asignada. Las transiciones condicionales evalúan variables y métricas reflejadas en la pizarra."
+    }
+  },
+
+  "global_guards": {
+    "global_max_turns": 15,
+    "execution_timeout_seconds": 600,
+    "on_global_limit_action": "force_transition_to_terminal_node"
+  },
+
+  "entry_node": "eda_agent",
+  "terminal_node": "consolidator_agent",
+
+  "nodes": {
+    "eda_agent": {
+      "agent_declaration": "declarations/agents/eda_agent.json",
+      "role": "Data Auditor & Exploratory Analyst",
+      "description": "Inspecciona el dataset, detecta tipos de columnas, valores atípicos, valores nulos y desbalance de clases.",
+      "max_visits": 2,
+      "blackboard_permissions": {
+        "read_sections": ["problem_spec"],
+        "write_section": "eda_insights"
+      }
+    },
+    "feature_agent": {
+      "agent_declaration": "declarations/agents/feature_agent.json",
+      "role": "Feature Engineering Specialist",
+      "description": "Diseña, genera y selecciona variables a partir de los hallazgos del EDA o de la retroalimentación del modelador.",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": ["problem_spec", "eda_insights", "experiment_leaderboard"],
+        "write_section": "feature_engineering"
+      }
+    },
+    "model_agent": {
+      "agent_declaration": "declarations/agents/model_agent.json",
+      "role": "Model Explorer & Validation Specialist",
+      "description": "Entrena modelos de baseline y avanzados, evalúa métricas con validación cruzada y reporta el desempeño y posibles sobreajustes.",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": ["problem_spec", "eda_insights", "feature_engineering", "experiment_leaderboard"],
+        "write_section": "experiment_leaderboard"
+      }
+    },
+    "consolidator_agent": {
+      "agent_declaration": "declarations/agents/consolidator_agent.json",
+      "role": "Lead Data Scientist & Decision Arbiter",
+      "description": "Nodo terminal. Lee toda la evidencia de la pizarra, descarta sobreajustes y genera la decisión final con el pipeline reproducible.",
+      "max_visits": 1,
+      "blackboard_permissions": {
+        "read_sections": ["*"],
+        "write_section": "final_decision"
+      }
+    }
+  },
+
+  "edges": [
+    {
+      "edge_id": "edge_eda_to_features",
+      "from": "eda_agent",
+      "to": "feature_agent",
+      "bidirectional": false,
+      "description": "Transición inicial: una vez completada la auditoría de datos, se transfieren las conclusiones al ingeniero de variables.",
+      "transition_condition": "blackboard.has_section('eda_insights') == true"
+    },
+    {
+      "edge_id": "edge_features_models_cycle",
+      "from": "feature_agent",
+      "to": "model_agent",
+      "bidirectional": true,
+      "description": "Canal de diálogo bidireccional y cíclico. Feature Agent propone variables y Model Agent las valida. Si hay sobreajuste o margen de mejora, el control regresa a Feature Agent.",
+      "loop_controls": {
+        "max_cycle_iterations": 3,
+        "continue_condition": "agent_feedback.requires_more_features == true AND cycle_count < max_cycle_iterations",
+        "exit_condition": "agent_feedback.converged == true OR metric_delta < 0.002",
+        "fallback_target": "consolidator_agent"
+      }
+    },
+    {
+      "edge_id": "edge_model_to_consolidator",
+      "from": "model_agent",
+      "to": "consolidator_agent",
+      "bidirectional": false,
+      "description": "Transición final al consolidador cuando el modelador alcanza la convergencia o concluye el ciclo de experimentación.",
+      "transition_condition": "cycle_completed('edge_features_models_cycle') == true OR agent_feedback.status == 'ready_for_consolidation'"
+    }
+  ]
+}

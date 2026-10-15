@@ -1,0 +1,126 @@
+// ==============================================================================
+// ARCHIVO DE EJEMPLO: Declaración de Herramienta para el Harness de ML
+// Este archivo sirve como plantilla y referencia para declarar herramientas.
+// Basado en tool.template.json.
+// ==============================================================================
+{
+  "schema_version": "1.0.0",
+  "id": "execute_python",
+  "name": "execute_python_code",
+  "kind": "tool",
+  "version": "0.1.0",
+  "description": "Ejecuta un script de Python de forma aislada en el entorno local con límites de tiempo y memoria, capturando stdout, stderr, código de retorno y artefactos generados.",
+  "prompt_context": "execute_python_code: Ejecuta código Python para inspeccionar datos, crear características o entrenar modelos de machine learning. Úsala cuando necesites computar operaciones con librerías como pandas, numpy, scikit-learn o lightgbm. Devuelve stdout, stderr, código de retorno y archivos generados. No intentes ejecutar comandos interactivos con input() ni llamadas de red no autorizadas.",
+  
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["code"],
+    "properties": {
+      "code": {
+        "type": "string",
+        "description": "Script de Python ejecutable y autocontenido a correr en el sandbox."
+      },
+      "timeout_s": {
+        "type": ["integer", "null"],
+        "description": "Tiempo límite en segundos para la ejecución; si es null, utiliza el valor por defecto configurado (120s)."
+      }
+    }
+  },
+
+  "output_schema": {
+    "type": "object",
+    "required": ["ok", "tool_id", "version"],
+    "properties": {
+      "ok": {
+        "type": "boolean",
+        "description": "Indica si el script finalizó con código de salida 0 sin excepciones no capturadas."
+      },
+      "tool_id": {
+        "type": "string",
+        "description": "Identificador de la herramienta que produjo la respuesta."
+      },
+      "version": {
+        "type": "string",
+        "description": "Versión de la herramienta ejecutada."
+      },
+      "result": {
+        "type": "object",
+        "description": "Carga útil de la respuesta en caso de ejecución exitosa.",
+        "properties": {
+          "stdout": {
+            "type": "string",
+            "description": "Salida estándar capturada del script."
+          },
+          "stderr": {
+            "type": "string",
+            "description": "Salida de error estándar o advertencias capturadas."
+          },
+          "exit_code": {
+            "type": "integer",
+            "description": "Código de terminación del proceso (0 indica éxito)."
+          },
+          "execution_time_s": {
+            "type": "number",
+            "description": "Tiempo real transcurrido durante la ejecución en segundos."
+          },
+          "artifacts_created": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Lista de rutas de archivos nuevos o modificados en artifacts/."
+          }
+        }
+      },
+      "flags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Banderas semánticas emitidas durante la ejecución (ej. ['high_memory_usage'])."
+      },
+      "warnings": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Advertencias no fatales producidas por el entorno o librerías."
+      },
+      "error": {
+        "type": "object",
+        "description": "Detalles del error si ok es false; permite al LLM auto-corregir su código.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["input_error", "timeout_error", "dependency_error", "runtime_error", "memory_limit_exceeded"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Traceback completo o mensaje detallado de la excepción."
+          }
+        }
+      },
+      "disclaimer": {
+        "type": ["string", "null"]
+      }
+    }
+  },
+
+  "config": {
+    "default_timeout_s": 120,
+    "max_memory_mb": 4096,
+    "working_directory": "artifacts/",
+    "max_output_chars": 10000
+  },
+
+  "examples": [
+    {
+      "input": {
+        "code": "import pandas as pd\ndf = pd.read_csv('train.csv')\nprint(f'Shape: {df.shape}')"
+      },
+      "expected_flags": []
+    }
+  ],
+
+  "deterministic": false,
+  "side_effects": "write",
+  "disclaimer": "El código se ejecuta en un subproceso local del entorno virtual del harness.",
+  "references": [
+    "code/tools/execute_python.py"
+  ]
+}
