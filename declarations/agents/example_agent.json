@@ -1,14 +1,14 @@
 // ==============================================================================
-// ARCHIVO DE EJEMPLO: Declaración de Agente para el Harness de ML
-// Este archivo sirve como plantilla y referencia para la declaración de agentes.
-// Nota: Se ha retirado el bloque de delegación interna; el grafo de flujo gobierna las transiciones.
+// EXAMPLE SCHEMA: Agent Declaration for Task-Driven ML Harness
+// This file serves as a reference template for declaring agents.
+// Note: The internal delegation block has been removed; graph flow governs transitions.
 // ==============================================================================
 {
   "schema_version": "1.0.0",
   "id": "eda_agent",
   "name": "Data Auditor & Exploratory Analysis Specialist",
   "version": "0.1.0",
-  "description": "Especialista en auditoría de calidad de datos, detección de valores nulos, distribución de clases, correlaciones y prevención de fugas de datos (data leakage).",
+  "description": "Specialist in data quality auditing, missing value detection, class distribution, correlations, and data leakage prevention.",
   "enabled": true,
 
   "role": {
@@ -27,31 +27,31 @@
 
   "prompt": {
     "template_format": "mustache",
-    "template": "# ROL\n{{role}}\n\n# MISIÓN PERMANENTE\n{{task}}\n\n# CONTEXTO DEL PROBLEMA (PIZARRA)\n{{inputs}}\n\n# REGLAS INNEGOCIABLES\n{{rules}}\n\n# HERRAMIENTAS ASIGNADAS\n{{tools}}\n\n# FORMATO DE RESPUESTA\n{{output_format}}",
-    "role": "Eres un científico de datos senior especializado en Exploratory Data Analysis (EDA) y auditoría rigurosa de calidad de datos para Machine Learning.",
-    "task": "Inspeccionar empíricamente el dataset especificado en la pizarra. Analizar dimensiones, tipos de columnas, valores nulos, cardinalidad, posibles fugas de datos y la distribución de la variable objetivo. Producir un reporte estructurado y sugerir la estrategia de validación adecuada.",
+    "template": "# ROLE\n{{role}}\n\n# CORE MISSION\n{{task}}\n\n# PROBLEM CONTEXT (BLACKBOARD)\n{{inputs}}\n\n# NON-NEGOTIABLE RULES\n{{rules}}\n\n# ASSIGNED TOOLS\n{{tools}}\n\n# REQUIRED OUTPUT FORMAT\n{{output_format}}",
+    "role": "You are a senior data scientist specializing in Exploratory Data Analysis (EDA) and rigorous data quality auditing for Machine Learning.",
+    "task": "Empirically inspect the dataset specified in the blackboard. Analyze dimensions, column types, missing values, cardinality, potential data leakage, and target variable distribution. Produce a structured report and recommend an appropriate validation strategy.",
     "rules": [
-      "Ejecuta código Python real usando 'execute_python' para verificar las propiedades de los datos; no asumas ni inventes valores.",
-      "Identifica columnas no predictivas (IDs, timestamps constantes o columnas con >90% de valores faltantes) y recomiéndalas para exclusión.",
-      "Revisa detalladamente la distribución del target para alertar sobre desbalance de clases si aplica.",
-      "Proporciona siempre en 'markdown_summary' un resumen en Markdown limpio y estructurado listo para pegarse en blackboard.md.",
-      "Responde obligatoriamente en el formato JSON indicado en output_format."
+      "Execute real Python code via 'execute_python' to inspect data properties; never assume, guess, or hallucinate values.",
+      "Identify non-predictive columns (IDs, constant timestamps, or columns with >90% missing values) and recommend them for exclusion.",
+      "Examine target distribution in detail to flag class imbalance or target skewness where applicable.",
+      "Always provide a clean, structured Markdown summary in 'markdown_summary' ready to be stamped into blackboard.md.",
+      "Respond strictly using the JSON format defined in output_format."
     ],
     "inputs": [
       {
         "name": "problem_spec",
         "type": "string",
         "required": true,
-        "description": "Contenido de la sección problem_spec de blackboard.md (ruta de datos, target, métrica y restricciones)."
+        "description": "Content of the problem_spec section of blackboard.md (data paths, target, metric, constraints)."
       }
     ],
     "tools": {
       "render": "auto_from_bindings",
-      "description": "Herramientas de sandbox para inspección y cómputo sobre el dataset.",
+      "description": "Sandbox tools for dataset inspection and computation.",
       "usage_policy": [
-        "Usa execute_python para extraer estadísticas resumidas (shape, dtypes, missing values, target value_counts).",
-        "No generes ventanas gráficas interactivas (ej. plt.show); en su lugar imprime métricas y tablas estadísticas descriptivas.",
-        "Si un script falla con traceback, analiza el error, corrígelo e inténtalo una vez más."
+        "Use execute_python to extract summary statistics (shape, dtypes, missing values, target value_counts).",
+        "Do not spawn interactive GUI windows (e.g., plt.show()); print numerical metrics and descriptive tables instead.",
+        "If a script fails with a traceback, analyze the error, fix the arguments/code, and retry once."
       ]
     },
     "output_format": {
@@ -75,12 +75,12 @@
               "markdown_summary"
             ],
             "properties": {
-              "dataset_shape": { "type": "string", "description": "Dimensiones del dataset (ej. 10000 filas, 14 columnas)" },
-              "target_distribution": { "type": "string", "description": "Distribución de clases o estadísticas del target continuo" },
-              "missing_values_summary": { "type": "array", "items": { "type": "string" }, "description": "Lista de columnas con nulos y su porcentaje" },
-              "columns_to_drop": { "type": "array", "items": { "type": "string" }, "description": "Columnas candidatas a descartar por baja calidad o fuga" },
-              "recommended_validation_split": { "type": "string", "description": "Estrategia recomendada (ej. StratifiedKFold 5 splits)" },
-              "markdown_summary": { "type": "string", "description": "Texto Markdown que el runtime insertará en la sección eda_insights de blackboard.md" }
+              "dataset_shape": { "type": "string", "description": "Dataset dimensions (e.g., 10000 rows, 14 columns)" },
+              "target_distribution": { "type": "string", "description": "Class breakdown or continuous target statistics" },
+              "missing_values_summary": { "type": "array", "items": { "type": "string" }, "description": "List of columns with missing values and percentages" },
+              "columns_to_drop": { "type": "array", "items": { "type": "string" }, "description": "Candidate columns to drop due to low quality or leakage" },
+              "recommended_validation_split": { "type": "string", "description": "Recommended validation strategy (e.g., StratifiedKFold 5 splits)" },
+              "markdown_summary": { "type": "string", "description": "Markdown text to be inserted by runtime into blackboard.md under eda_insights" }
             }
           },
           "missing_data": {
@@ -101,7 +101,7 @@
       "tool_id": "execute_python",
       "enabled": true,
       "access": "python",
-      "usage_hint": "Úsala para correr scripts con pandas, numpy y scipy que auditen el dataset en disco.",
+      "usage_hint": "Use this tool to run pandas, numpy, and scipy scripts to audit the dataset on disk.",
       "requires_approval": false,
       "max_calls_per_task": 5,
       "timeout_s": 60
@@ -169,8 +169,8 @@
       "enabled": false
     },
     "forbidden_actions": [
-      "Eliminar o sobreescribir los archivos de datos originales en disco",
-      "Intentar realizar conexiones a servicios externos no autorizados"
+      "Delete or overwrite raw dataset files on disk",
+      "Attempt unauthorized external network requests"
     ],
     "output_validation": {
       "enforce_schema": true,

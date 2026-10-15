@@ -1,8 +1,8 @@
 # 📋 ML Problem Blackboard
 
 This shared blackboard serves as the cumulative memory of the multi-agent system.
-Agents read the context, execute specialized tasks, and append/update their assigned sections.
-The final Consolidator agent reads the entire blackboard to make the final decision.
+Agents read previous context, execute specialized tasks, and append/update their assigned sections.
+The terminal Consolidator agent reads the entire blackboard to make the final decision.
 
 ---
 

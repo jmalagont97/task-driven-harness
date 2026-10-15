@@ -1,20 +1,20 @@
 // ==============================================================================
-// ARCHIVO DE EJEMPLO: Esquema de Grafo de Flujo Conversacional
-// Este archivo sirve como plantilla y referencia para el diseño de flujos en el harness.
+// EXAMPLE SCHEMA: Conversational Flow Graph Specification
+// This file serves as a reference template for designing workflow graphs in the harness.
 // ==============================================================================
 {
-  "$schema_description": "Especificación del Grafo de Flujo Conversacional para el Harness de ML",
+  "$schema_description": "Conversational Flow Graph Specification for the Task-Driven ML Harness",
   "header": {
     "flow_id": "flow_ml_tabular_iterative_v1",
-    "name": "Flujo Iterativo de Machine Learning Tabular con Ciclo de Optimización",
+    "name": "Iterative Tabular Machine Learning Flow with Optimization Loop",
     "version": "1.0.0",
     "author": "Task-Driven Harness Architecture",
-    "description": "Grafo conversacional y de control diseñado para resolver problemas de ML tabular. Inicia con análisis exploratorio de datos (EDA), transiciona a un ciclo iterativo y bidireccional entre Ingeniería de Características y Modelado/Validación, y concluye en un Agente Consolidador que evalúa los resultados y formula la decisión final.",
+    "description": "Conversational and control graph designed to solve tabular ML problems. Starts with exploratory data analysis (EDA), transitions to an iterative and bidirectional cycle between Feature Engineering and Modeling/Validation, and concludes at a Consolidator Agent that evaluates results and issues the final decision.",
     "graph_properties": {
       "is_cyclic": true,
       "supports_bidirectional_dialogue": true,
-      "loop_prevention_mechanism": "Control jerárquico de 3 niveles: (1) límite global de turnos para todo el flujo, (2) límite de visitas máximas por nodo individual, y (3) límite de iteraciones por ciclo con condición de continuidad y ruta de escape (fallback) forzada hacia el consolidador.",
-      "blackboard_integration": "Cada agente lee el estado acumulado en blackboard.md y escribe sus contribuciones en su sección asignada. Las transiciones condicionales evalúan variables y métricas reflejadas en la pizarra."
+      "loop_prevention_mechanism": "Hierarchical 3-level control: (1) global turn limit for the entire run, (2) max visits limit per individual node, and (3) max iterations limit per cycle with continuation condition and forced fallback target to the consolidator.",
+      "blackboard_integration": "Each agent reads accumulated state from blackboard.md and commits contributions to its assigned section. Conditional transitions evaluate variables and metrics reflected on the blackboard."
     }
   },
 
@@ -31,7 +31,7 @@
     "eda_agent": {
       "agent_declaration": "declarations/agents/eda_agent.json",
       "role": "Data Auditor & Exploratory Analyst",
-      "description": "Inspecciona el dataset, detecta tipos de columnas, valores atípicos, valores nulos y desbalance de clases.",
+      "description": "Inspects dataset, detects column data types, outliers, missing values, and class imbalance.",
       "max_visits": 2,
       "blackboard_permissions": {
         "read_sections": ["problem_spec"],
@@ -41,7 +41,7 @@
     "feature_agent": {
       "agent_declaration": "declarations/agents/feature_agent.json",
       "role": "Feature Engineering Specialist",
-      "description": "Diseña, genera y selecciona variables a partir de los hallazgos del EDA o de la retroalimentación del modelador.",
+      "description": "Designs, generates, and selects predictive features based on EDA findings or modeler feedback.",
       "max_visits": 5,
       "blackboard_permissions": {
         "read_sections": ["problem_spec", "eda_insights", "experiment_leaderboard"],
@@ -51,7 +51,7 @@
     "model_agent": {
       "agent_declaration": "declarations/agents/model_agent.json",
       "role": "Model Explorer & Validation Specialist",
-      "description": "Entrena modelos de baseline y avanzados, evalúa métricas con validación cruzada y reporta el desempeño y posibles sobreajustes.",
+      "description": "Trains baseline and candidate models, evaluates cross-validation metrics, and reports performance and overfitting risks.",
       "max_visits": 5,
       "blackboard_permissions": {
         "read_sections": ["problem_spec", "eda_insights", "feature_engineering", "experiment_leaderboard"],
@@ -61,7 +61,7 @@
     "consolidator_agent": {
       "agent_declaration": "declarations/agents/consolidator_agent.json",
       "role": "Lead Data Scientist & Decision Arbiter",
-      "description": "Nodo terminal. Lee toda la evidencia de la pizarra, descarta sobreajustes y genera la decisión final con el pipeline reproducible.",
+      "description": "Terminal node. Reads all cumulative evidence from the blackboard, screens for data leakage/overfitting, and produces the final reproducible pipeline.",
       "max_visits": 1,
       "blackboard_permissions": {
         "read_sections": ["*"],
@@ -76,7 +76,7 @@
       "from": "eda_agent",
       "to": "feature_agent",
       "bidirectional": false,
-      "description": "Transición inicial: una vez completada la auditoría de datos, se transfieren las conclusiones al ingeniero de variables.",
+      "description": "Initial transition: once data audit is completed, hand off insights to the feature engineer.",
       "transition_condition": "blackboard.has_section('eda_insights') == true"
     },
     {
@@ -84,7 +84,7 @@
       "from": "feature_agent",
       "to": "model_agent",
       "bidirectional": true,
-      "description": "Canal de diálogo bidireccional y cíclico. Feature Agent propone variables y Model Agent las valida. Si hay sobreajuste o margen de mejora, el control regresa a Feature Agent.",
+      "description": "Bidirectional collaborative dialogue channel. Feature Agent proposes variables and Model Agent validates them. If overfitting or improvement room is detected, control returns to Feature Agent.",
       "loop_controls": {
         "max_cycle_iterations": 3,
         "continue_condition": "agent_feedback.requires_more_features == true AND cycle_count < max_cycle_iterations",
@@ -97,7 +97,7 @@
       "from": "model_agent",
       "to": "consolidator_agent",
       "bidirectional": false,
-      "description": "Transición final al consolidador cuando el modelador alcanza la convergencia o concluye el ciclo de experimentación.",
+      "description": "Final transition to consolidator when modeler achieves convergence or experiment budget exhausts.",
       "transition_condition": "cycle_completed('edge_features_models_cycle') == true OR agent_feedback.status == 'ready_for_consolidation'"
     }
   ]

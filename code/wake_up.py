@@ -1,11 +1,11 @@
 """wake_up.py
 
-Módulo de inicialización ("despertar") del sistema y registro de agentes.
+System bootstrap and agent registration module ("wake-up").
 
-Responsabilidades:
-- Cargar las variables de entorno desde .env (claves de API, timeouts, configuraciones).
-- Escanear y validar las declaraciones en declarations/ (agentes, tools, flujos de conversación).
-- Emparejar cada herramienta declarada con su respectiva función ejecutable en code/tools/.
-- Inicializar las instancias de los agentes asignándoles su rol, modelo, herramientas y permisos sobre la pizarra.
-- Dejar todo el entorno listo y en espera para que infer.py comience la ejecución.
+Responsibilities:
+- Load environment variables from .env (API keys, execution timeouts, sandbox configurations).
+- Scan and validate declarations in declarations/ (agents, tools, conversation flows).
+- Pair each declared tool schema with its corresponding executable function in code/tools/.
+- Instantiate agent pools by injecting their role, LLM configuration, tools, and blackboard permissions.
+- Ensure runtime dependencies and sandbox environments are ready before infer.py starts execution.
 """

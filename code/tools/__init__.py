@@ -1,5 +1,5 @@
 """code/tools/
 
-Paquete que contendrá la implementación ejecutable de las herramientas definidas
-en declarations/tools/ (ej. ejecución de código Python, inspección de datos, operaciones sobre la pizarra, etc.).
+Package containing executable implementations of the tools declared
+in declarations/tools/ (e.g., Python code execution, dataset inspection, blackboard operations, etc.).
 """
