@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "abalone_tools": {
+      "command": ".venv/bin/python",
+      "args": ["code/mcp_server.py", "--server", "abalone_tools"]
+    }
+  }
+}
