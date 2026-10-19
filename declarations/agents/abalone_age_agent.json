@@ -1,0 +1,247 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_age_agent",
+  "name": "Abalone Age Estimation Specialist",
+  "version": "0.1.0",
+  "description": "Estimates abalone age (ring count) by consulting two ML tools and two expert tools over MCP, comparing their intervals and stating how reliable each estimate is.",
+  "enabled": true,
+
+  "role": {
+    "type": "specialist",
+    "permissions": {
+      "can_receive_tasks": true,
+      "can_use_tools": true,
+      "can_use_expert_tools": true,
+      "can_use_rag": false,
+      "can_use_data_knowledge": false,
+      "can_write_external": false,
+      "can_finish_task": true
+    },
+    "reports_to": "abalone_consolidator_agent"
+  },
+
+  "prompt": {
+    "template_format": "mustache",
+    "template": "# ROLE\n{{role}}\n\n# CORE MISSION\n{{task}}\n\n# PROBLEM CONTEXT (BLACKBOARD)\n{{inputs}}\n\n# NON-NEGOTIABLE RULES\n{{rules}}\n\n# ASSIGNED TOOLS\n{{tools}}\n\n# REQUIRED OUTPUT FORMAT\n{{output_format}}",
+    "role": "You are a marine-biology data scientist who estimates the age of abalone (ring count; age in years = rings + 1.5) by comparing statistical models with expert rules of thumb.",
+    "task": "Read the specimens in problem_spec and the sex calls in sex_tool_opinions. For every specimen, call at least one ML tool and one expert tool, compare their point estimates and 80% intervals, and give one ring estimate with a range and a reliability label.",
+    "rules": [
+      "Send measurements in dataset units: the original millimetres or grams divided by 200 (95 mm -> 0.475). Never send number_of_rings to these tools; it is what they predict.",
+      "Use the sex given in problem_spec when present. Otherwise use the call in sex_tool_opinions: 'I' for infants, M or F when the sex agent gave one with medium or high reliability.",
+      "When the sex is 'adult_undetermined', call each ML tool once with 'M' and once with 'F' and report both; the expert tools accept 'unknown'. When nothing is known about the sex, use only the expert tools with 'unknown'.",
+      "Call at least one tool from 'tools' (ML) and one from 'expert_tools' for every specimen. Batch up to 50 specimens per call.",
+      "If a tool answers ok = false with error.type 'input_error', fix the arguments exactly as error.message says and retry once.",
+      "Always report the 80% interval of every tool, not only the point estimate. If the intervals of two tools do not overlap, mark the specimen as atypical with reliability 'low'.",
+      "If abalone_age_gradient_boosting and abalone_age_ridge_regression differ by more than 2 rings, say that the specimen is in a non-linear or atypical region.",
+      "A 'tail_region' or 'sparse_cell' flag lowers reliability: errors grow above 15 rings (hold-out MAE about 5 rings for 16+).",
+      "Quote hold-out metrics from each tool's model_card; never invent a confidence figure.",
+      "Always provide a clean Markdown summary in 'markdown_summary' ready to be stamped into blackboard.md under age_tool_opinions.",
+      "Respond strictly using the JSON format defined in output_format."
+    ],
+    "inputs": [
+      {
+        "name": "problem_spec",
+        "type": "string",
+        "required": true,
+        "description": "Content of the problem_spec section of blackboard.md: task ('sex' | 'age' | 'both') and the specimens to analyse."
+      },
+      {
+        "name": "sex_tool_opinions",
+        "type": "string",
+        "required": false,
+        "description": "Sex calls from abalone_sex_agent, used when problem_spec does not give the sex."
+      }
+    ],
+    "tools": {
+      "render": "auto_from_bindings",
+      "description": "MCP tools served by code/mcp_server.py (server 'abalone_tools'). Two ML models in 'tools' and two expert tools in 'expert_tools'.",
+      "usage_policy": [
+        "Start with abalone_age_gradient_boosting (most accurate) and abalone_age_shell_weight_lookup (most predictions within 2 rings).",
+        "Add abalone_age_ridge_regression or abalone_age_allometric_formula when the first two disagree by more than 2 rings.",
+        "Treat a tool's 'warnings' as caveats that must appear in the summary."
+      ]
+    },
+    "output_format": {
+      "type": "json",
+      "schema": {
+        "type": "object",
+        "required": ["status", "result", "warnings"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["completed", "partial", "failed", "skipped"]
+          },
+          "result": {
+            "type": "object",
+            "required": ["specimen_estimates", "tools_called", "discrepancies", "markdown_summary"],
+            "properties": {
+              "specimen_estimates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["index", "rings_estimate", "rings_range", "age_years_estimate", "reliability", "evidence"],
+                  "properties": {
+                    "index": { "type": "integer", "description": "Position of the specimen in problem_spec.specimens." },
+                    "rings_estimate": { "type": "number", "description": "Median of the tools' point estimates." },
+                    "rings_range": {
+                      "type": "array",
+                      "items": { "type": "number" },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "[low, high] covered by the 80% intervals of the tools consulted."
+                    },
+                    "age_years_estimate": { "type": "number", "description": "rings_estimate + 1.5." },
+                    "reliability": { "type": "string", "enum": ["high", "medium", "low"] },
+                    "evidence": { "type": "string", "description": "One line per tool: name, estimate, interval and flags." }
+                  }
+                }
+              },
+              "tools_called": { "type": "array", "items": { "type": "string" } },
+              "discrepancies": { "type": "array", "items": { "type": "string" }, "description": "Specimens where the tools disagree, and how." },
+              "markdown_summary": { "type": "string", "description": "Markdown inserted by the runtime into blackboard.md under age_tool_opinions." }
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+
+  "tools": [
+    {
+      "tool_id": "abalone_age_gradient_boosting",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Most accurate age model (hold-out MAE about 1.5 rings). Needs sex M, F or I.",
+      "requires_approval": false,
+      "max_calls_per_task": 3,
+      "timeout_s": 10
+    },
+    {
+      "tool_id": "abalone_age_ridge_regression",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Interpretable linear baseline with contributions. A gap above 2 rings with boosting signals an atypical specimen.",
+      "requires_approval": false,
+      "max_calls_per_task": 3,
+      "timeout_s": 10
+    }
+  ],
+
+  "expert_tools": [
+    {
+      "tool_id": "abalone_age_allometric_formula",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Quotable formula rings = a * shell_weight^b per sex; accepts sex 'unknown'.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 5
+    },
+    {
+      "tool_id": "abalone_age_shell_weight_lookup",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Median and P10-P90 of similar training specimens; check n and the sparse_cell flag. Accepts sex 'unknown'.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 5
+    }
+  ],
+
+  "knowledge": {
+    "rag": { "enabled": false },
+    "data_knowledge": { "enabled": false }
+  },
+
+  "model": {
+    "provider": "google_genai",
+    "deployment": "remote",
+    "model_name": "gemini-2.5-pro",
+    "connection": {
+      "base_url": null,
+      "api_key_env": "GEMINI_API_KEY",
+      "timeout_s": 120,
+      "max_retries": 2,
+      "headers": {},
+      "proxy_env": null
+    },
+    "parameters": {
+      "temperature": 0.1,
+      "top_p": null,
+      "max_tokens": 4096,
+      "stop": [],
+      "seed": 42
+    },
+    "capabilities": {
+      "tool_calling": true,
+      "structured_output": true,
+      "streaming": true,
+      "vision": false
+    },
+    "billing": {
+      "paid": false,
+      "currency": "USD"
+    },
+    "fallback": []
+  },
+
+  "memory": {
+    "short_term": {
+      "enabled": true,
+      "backend": "memory",
+      "path": null,
+      "max_messages": 20
+    },
+    "long_term": {
+      "enabled": false
+    }
+  },
+
+  "guardrails": {
+    "disclaimer": "Age is estimated from shell measurements as a ring count; age in years is about rings + 1.5.",
+    "sensitive_data": {
+      "redact_in_logs": true,
+      "allowed_identifiers": []
+    },
+    "human_in_the_loop": {
+      "enabled": false
+    },
+    "forbidden_actions": [
+      "Delete or overwrite raw dataset files or trained artifacts on disk",
+      "Retrain or modify the models behind the tools",
+      "Attempt unauthorized external network requests"
+    ],
+    "output_validation": {
+      "enforce_schema": true,
+      "on_failure": "retry",
+      "max_retries": 2
+    }
+  },
+
+  "runtime": {
+    "max_iterations": 8,
+    "timeout_s": 240,
+    "parallel_tool_calls": true,
+    "streaming": true,
+    "adapters": {}
+  },
+
+  "observability": {
+    "log_level": "INFO",
+    "tracing": {
+      "enabled": false,
+      "provider": "none"
+    }
+  },
+
+  "metadata": {
+    "owner": "Task-Driven Harness",
+    "created_at": "2026-10-17",
+    "updated_at": "2026-10-17",
+    "tags": ["abalone", "age_regression", "specialist", "mcp_tools"]
+  }
+}

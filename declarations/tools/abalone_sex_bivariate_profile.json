@@ -1,0 +1,401 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_sex_bivariate_profile",
+  "name": "abalone_sex_bivariate_profile",
+  "kind": "tool",
+  "version": "0.1.0",
+  "description": "Estimates abalone sex (M/F/I) from diameter and ring count with bivariate normal class profiles and Bayes' rule.",
+  "prompt_context": "abalone_sex_bivariate_profile: Statistical expert that estimates the sex (M/F/I) of 1-50 abalone specimens from only two variables, diameter and number_of_rings. Each sex has a bivariate normal profile (mean and covariance estimated on the train split), and Bayes' rule with the class priors gives the posterior probabilities. Returns the posteriors, p_adult, mf_margin, the nearest profile and the squared Mahalanobis distance to each profile; 'out_of_profile' means the specimen is far from all three profiles (beyond the 99% chi-square contour). Use it as a simple second opinion a biologist can check by hand. Send all 8 fields in dataset units (mm or g divided by 200), although only diameter and number_of_rings are used. Infant vs adult is about 79% on hold-out data; male vs female is near chance. Read-only.",
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "specimens"
+    ],
+    "properties": {
+      "specimens": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 50,
+        "description": "Specimens to classify (1-50). Every value is in dataset units: the original millimetres or grams divided by 200.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "length",
+            "diameter",
+            "height",
+            "whole_weight",
+            "shucked_weight",
+            "viscera_weight",
+            "shell_weight",
+            "number_of_rings"
+          ],
+          "properties": {
+            "length": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Longest shell measurement in mm/200, e.g. 0.475 (= 95 mm)."
+            },
+            "diameter": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Shell diameter perpendicular to length, in mm/200."
+            },
+            "height": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.5,
+              "description": "Height with meat in shell, in mm/200. Must be greater than 0."
+            },
+            "whole_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 4.0,
+              "description": "Whole abalone weight in g/200."
+            },
+            "shucked_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 2.0,
+              "description": "Meat weight in g/200."
+            },
+            "viscera_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Gut weight after bleeding, in g/200."
+            },
+            "shell_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.5,
+              "description": "Dried shell weight in g/200."
+            },
+            "number_of_rings": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 40,
+              "description": "Ring count; age in years is about rings + 1.5."
+            }
+          }
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": [
+      "ok",
+      "tool_id",
+      "version"
+    ],
+    "properties": {
+      "ok": {
+        "type": "boolean",
+        "description": "True when every specimen was scored; false with 'error' otherwise."
+      },
+      "tool_id": {
+        "type": "string",
+        "description": "Identifier of the tool that produced this response."
+      },
+      "version": {
+        "type": "string",
+        "description": "Version of the tool."
+      },
+      "result": {
+        "type": "object",
+        "required": [
+          "predictions",
+          "model_card"
+        ],
+        "properties": {
+          "predictions": {
+            "type": "array",
+            "description": "One entry per input specimen, in input order.",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "predicted_sex",
+                "probabilities",
+                "p_adult",
+                "mf_margin",
+                "nearest_profile",
+                "mahalanobis_sq",
+                "flags"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Position in the input specimens list."
+                },
+                "predicted_sex": {
+                  "type": "string",
+                  "enum": [
+                    "M",
+                    "F",
+                    "I"
+                  ],
+                  "description": "Most probable class."
+                },
+                "probabilities": {
+                  "type": "object",
+                  "required": [
+                    "M",
+                    "F",
+                    "I"
+                  ],
+                  "properties": {
+                    "M": {
+                      "type": "number"
+                    },
+                    "F": {
+                      "type": "number"
+                    },
+                    "I": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "p_adult": {
+                  "type": "number",
+                  "description": "P(M) + P(F): probability that the specimen is an adult."
+                },
+                "mf_margin": {
+                  "type": "number",
+                  "description": "|P(M) - P(F)|. Below config.mf_ambiguity_margin the male/female call is unreliable."
+                },
+                "nearest_profile": {
+                  "type": "string",
+                  "enum": [
+                    "M",
+                    "F",
+                    "I"
+                  ]
+                },
+                "mahalanobis_sq": {
+                  "type": "object",
+                  "required": [
+                    "M",
+                    "F",
+                    "I"
+                  ],
+                  "properties": {
+                    "M": {
+                      "type": "number"
+                    },
+                    "F": {
+                      "type": "number"
+                    },
+                    "I": {
+                      "type": "number"
+                    }
+                  },
+                  "description": "Squared Mahalanobis distance from the specimen to each sex profile."
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "mf_ambiguous",
+                      "maturity_uncertain",
+                      "out_of_profile",
+                      "out_of_distribution",
+                      "inconsistent_weights"
+                    ]
+                  },
+                  "description": "mf_ambiguous: predicted adult but M and F are nearly tied. maturity_uncertain: p_adult within config.maturity_uncertainty_band of 0.5. out_of_distribution: some value lies outside P0.5-P99.5 of the training data. inconsistent_weights: shucked + viscera + shell > 1.1 x whole."
+                }
+              }
+            }
+          },
+          "model_card": {
+            "type": "object",
+            "required": [
+              "algorithm",
+              "features",
+              "trained_on",
+              "profiles",
+              "out_of_profile_threshold",
+              "holdout_metrics"
+            ],
+            "properties": {
+              "algorithm": {
+                "type": "string"
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "trained_on": {
+                "type": "string"
+              },
+              "profiles": {
+                "type": "object",
+                "description": "Mean (diameter, number_of_rings) and prior of each sex."
+              },
+              "out_of_profile_threshold": {
+                "type": "number"
+              },
+              "holdout_metrics": {
+                "type": "object",
+                "required": [
+                  "accuracy",
+                  "macro_f1",
+                  "infant_vs_adult_accuracy",
+                  "majority_baseline",
+                  "mf_accuracy_among_adults",
+                  "mf_majority_baseline"
+                ],
+                "description": "Metrics on the frozen test split (835 specimens), computed once at training time.",
+                "properties": {
+                  "accuracy": {
+                    "type": "number"
+                  },
+                  "macro_f1": {
+                    "type": "number"
+                  },
+                  "infant_vs_adult_accuracy": {
+                    "type": "number"
+                  },
+                  "majority_baseline": {
+                    "type": "number",
+                    "description": "Accuracy of always answering the most common class."
+                  },
+                  "mf_accuracy_among_adults": {
+                    "type": "number",
+                    "description": "M/F accuracy on true adults predicted as adults."
+                  },
+                  "mf_majority_baseline": {
+                    "type": "number",
+                    "description": "Accuracy of always answering the most common adult sex."
+                  },
+                  "mf_ambiguous_rate": {
+                    "type": "number",
+                    "description": "Share of predicted adults flagged mf_ambiguous."
+                  },
+                  "expected_calibration_error": {
+                    "type": "number"
+                  },
+                  "per_class_recall": {
+                    "type": "object",
+                    "properties": {
+                      "M": {
+                        "type": "number"
+                      },
+                      "F": {
+                        "type": "number"
+                      },
+                      "I": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "n_test": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "flags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Every per-specimen flag plus tool-level flags, sorted."
+      },
+      "warnings": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Caveats to carry into the agent's summary."
+      },
+      "error": {
+        "type": "object",
+        "required": [
+          "type",
+          "message"
+        ],
+        "description": "Present when ok is false.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "input_error",
+              "artifact_missing",
+              "runtime_error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "What went wrong and how to fix the call."
+          }
+        }
+      },
+      "disclaimer": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "config": {
+    "params_path": "artifacts/models/abalone/expert_params.json",
+    "metrics_path": "artifacts/models/abalone/metrics.json",
+    "max_specimens": 50,
+    "mf_ambiguity_margin": 0.1,
+    "maturity_uncertainty_band": 0.1,
+    "out_of_profile_quantile": 0.99,
+    "default_timeout_s": 5
+  },
+  "examples": [
+    {
+      "input": {
+        "specimens": [
+          {
+            "length": 0.475,
+            "diameter": 0.365,
+            "height": 0.13,
+            "whole_weight": 0.4805,
+            "shucked_weight": 0.1905,
+            "viscera_weight": 0.114,
+            "shell_weight": 0.1475,
+            "number_of_rings": 12
+          }
+        ]
+      },
+      "expected_flags": []
+    }
+  ],
+  "deterministic": true,
+  "side_effects": "read",
+  "disclaimer": "Bayes-rule estimate from two variables (diameter, number_of_rings); male and female profiles overlap almost completely.",
+  "references": [
+    "code/tools/abalone/sex_experts.py",
+    "code/tools/abalone/train_abalone_tools.py",
+    "code/tools/abalone/README.md"
+  ],
+  "mcp": {
+    "expose": true,
+    "server": "abalone_tools",
+    "title": "Abalone sex - Bivariate profile (expert)",
+    "entrypoint": "code/tools/abalone/sex_experts.py::predict_bivariate_profile",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  }
+}

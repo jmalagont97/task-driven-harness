@@ -1,0 +1,366 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_age_gradient_boosting",
+  "name": "abalone_age_gradient_boosting",
+  "kind": "tool",
+  "version": "0.1.0",
+  "description": "Predicts the abalone ring count (age = rings + 1.5) with a pre-trained gradient boosting model and an 80% cross-conformal interval.",
+  "prompt_context": "abalone_age_gradient_boosting: Estimates the ring count (age in years = rings + 1.5) of 1-50 abalone specimens from 7 shell measurements plus sex, with a HistGradientBoosting regressor trained offline on log1p(rings). It is the most accurate age tool (hold-out MAE about 1.5 rings). Returns, per specimen, predicted_rings, predicted_age_years, an 80% cross-conformal interval and the age group; 'tail_region' marks predictions above 15 rings, where data are scarce and errors grow. Sex must be M, F or I; if it is unknown, call a sex tool first, or use the expert age tools, which accept 'unknown'. Measurements in dataset units (mm or g divided by 200). Compare it with at least one expert tool and report the interval, not only the point estimate. Read-only.",
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "specimens"
+    ],
+    "properties": {
+      "specimens": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 50,
+        "description": "Specimens to age (1-50). Every value is in dataset units: the original millimetres or grams divided by 200.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "length",
+            "diameter",
+            "height",
+            "whole_weight",
+            "shucked_weight",
+            "viscera_weight",
+            "shell_weight",
+            "sex"
+          ],
+          "properties": {
+            "length": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Longest shell measurement in mm/200, e.g. 0.475 (= 95 mm)."
+            },
+            "diameter": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Shell diameter perpendicular to length, in mm/200."
+            },
+            "height": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.5,
+              "description": "Height with meat in shell, in mm/200. Must be greater than 0."
+            },
+            "whole_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 4.0,
+              "description": "Whole abalone weight in g/200."
+            },
+            "shucked_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 2.0,
+              "description": "Meat weight in g/200."
+            },
+            "viscera_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Gut weight after bleeding, in g/200."
+            },
+            "shell_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.5,
+              "description": "Dried shell weight in g/200."
+            },
+            "sex": {
+              "type": "string",
+              "enum": [
+                "M",
+                "F",
+                "I"
+              ],
+              "description": "Sex: M (male), F (female) or I (infant). If it is unknown, call a sex tool first."
+            }
+          }
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": [
+      "ok",
+      "tool_id",
+      "version"
+    ],
+    "properties": {
+      "ok": {
+        "type": "boolean",
+        "description": "True when every specimen was scored; false with 'error' otherwise."
+      },
+      "tool_id": {
+        "type": "string",
+        "description": "Identifier of the tool that produced this response."
+      },
+      "version": {
+        "type": "string",
+        "description": "Version of the tool."
+      },
+      "result": {
+        "type": "object",
+        "required": [
+          "predictions",
+          "model_card"
+        ],
+        "properties": {
+          "predictions": {
+            "type": "array",
+            "description": "One entry per input specimen, in input order.",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "predicted_rings",
+                "predicted_age_years",
+                "interval_80",
+                "age_group",
+                "flags"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Position in the input specimens list."
+                },
+                "predicted_rings": {
+                  "type": "number"
+                },
+                "predicted_age_years": {
+                  "type": "number",
+                  "description": "predicted_rings + 1.5."
+                },
+                "interval_80": {
+                  "type": "object",
+                  "required": [
+                    "low",
+                    "high",
+                    "method"
+                  ],
+                  "properties": {
+                    "low": {
+                      "type": "number"
+                    },
+                    "high": {
+                      "type": "number"
+                    },
+                    "method": {
+                      "type": "string"
+                    }
+                  },
+                  "description": "80% interval for the ring count; the low end is never below 1."
+                },
+                "age_group": {
+                  "type": "string",
+                  "enum": [
+                    "Young (1-7)",
+                    "Young Adult (8-10)",
+                    "Adult (11-15)",
+                    "Old (16+)"
+                  ]
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "tail_region",
+                      "out_of_distribution",
+                      "inconsistent_weights"
+                    ]
+                  },
+                  "description": "tail_region: prediction above config.tail_rings_above rings, where data are scarce. out_of_distribution: some value lies outside P0.5-P99.5 of the training data. inconsistent_weights: shucked + viscera + shell > 1.1 x whole."
+                }
+              }
+            }
+          },
+          "model_card": {
+            "type": "object",
+            "required": [
+              "algorithm",
+              "features",
+              "trained_on",
+              "interval",
+              "holdout_metrics"
+            ],
+            "properties": {
+              "algorithm": {
+                "type": "string"
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "trained_on": {
+                "type": "string"
+              },
+              "interval": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "type": "string"
+                  },
+                  "level": {
+                    "type": "number"
+                  },
+                  "half_width_rings": {
+                    "type": "number"
+                  }
+                },
+                "description": "Cross-conformal interval: the 80% quantile of out-of-fold absolute residuals on the train split."
+              },
+              "holdout_metrics": {
+                "type": "object",
+                "required": [
+                  "mae",
+                  "rmse",
+                  "r2",
+                  "within_2_rings",
+                  "interval_coverage"
+                ],
+                "description": "Metrics on the frozen test split (835 specimens), computed once at training time.",
+                "properties": {
+                  "mae": {
+                    "type": "number",
+                    "description": "Mean absolute error in rings."
+                  },
+                  "rmse": {
+                    "type": "number"
+                  },
+                  "r2": {
+                    "type": "number"
+                  },
+                  "within_2_rings": {
+                    "type": "number",
+                    "description": "Share of test specimens predicted within 2 rings."
+                  },
+                  "interval_coverage": {
+                    "type": "number",
+                    "description": "Share of test specimens inside their 80% interval."
+                  },
+                  "interval_mean_width": {
+                    "type": "number"
+                  },
+                  "median_baseline_mae": {
+                    "type": "number",
+                    "description": "MAE of always answering the training median."
+                  },
+                  "mae_by_age_group": {
+                    "type": "object",
+                    "description": "MAE by true age group.",
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  },
+                  "n_test": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "flags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Every per-specimen flag plus tool-level flags, sorted."
+      },
+      "warnings": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Caveats to carry into the agent's summary."
+      },
+      "error": {
+        "type": "object",
+        "required": [
+          "type",
+          "message"
+        ],
+        "description": "Present when ok is false.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "input_error",
+              "artifact_missing",
+              "runtime_error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "What went wrong and how to fix the call."
+          }
+        }
+      },
+      "disclaimer": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "config": {
+    "model_path": "artifacts/models/abalone/age_gradient_boosting.joblib",
+    "metrics_path": "artifacts/models/abalone/metrics.json",
+    "max_specimens": 50,
+    "tail_rings_above": 15,
+    "default_timeout_s": 10
+  },
+  "examples": [
+    {
+      "input": {
+        "specimens": [
+          {
+            "length": 0.475,
+            "diameter": 0.365,
+            "height": 0.13,
+            "whole_weight": 0.4805,
+            "shucked_weight": 0.1905,
+            "viscera_weight": 0.114,
+            "shell_weight": 0.1475,
+            "sex": "F"
+          }
+        ]
+      },
+      "expected_flags": []
+    }
+  ],
+  "deterministic": true,
+  "side_effects": "read",
+  "disclaimer": "Statistical estimate of the ring count from shell morphometrics; age in years is about rings + 1.5. The 80% interval holds on average over specimens, not for every single specimen.",
+  "references": [
+    "code/tools/abalone/age_models.py",
+    "code/tools/abalone/train_abalone_tools.py",
+    "code/tools/abalone/README.md"
+  ],
+  "mcp": {
+    "expose": true,
+    "server": "abalone_tools",
+    "title": "Abalone age - Gradient boosting",
+    "entrypoint": "code/tools/abalone/age_models.py::predict_gradient_boosting",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  }
+}

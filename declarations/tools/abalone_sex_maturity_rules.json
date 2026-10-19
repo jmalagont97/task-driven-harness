@@ -1,0 +1,438 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_sex_maturity_rules",
+  "name": "abalone_sex_maturity_rules",
+  "kind": "tool",
+  "version": "0.1.0",
+  "description": "Expert rules that classify abalone specimens as infant or adult from shell size and ring count, and abstain on male vs female.",
+  "prompt_context": "abalone_sex_maturity_rules: Expert system that decides infant (I) vs adult for 1-50 abalone specimens with two readable rules on shell_weight, diameter and number_of_rings (for example 'shell_weight <= 0.17 and number_of_rings <= 8 -> infant'). The first rule that fires decides; if none fires, the specimen is an adult. For adults it deliberately abstains on male vs female (abstained = true, sex_candidates = ['M', 'F']) and returns the adult base rates, because shell measurements cannot separate males from females reliably. Use it as the transparent, auditable opinion next to the ML tools, and quote the fired rule text and its training precision. Send all 8 fields in dataset units (mm or g divided by 200). Hold-out infant-vs-adult accuracy is about 81%. Read-only; the thresholds live in this declaration's config.rules, and the flag 'rule_stats_stale' means they changed after training.",
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "specimens"
+    ],
+    "properties": {
+      "specimens": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 50,
+        "description": "Specimens to classify (1-50). Every value is in dataset units: the original millimetres or grams divided by 200.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "length",
+            "diameter",
+            "height",
+            "whole_weight",
+            "shucked_weight",
+            "viscera_weight",
+            "shell_weight",
+            "number_of_rings"
+          ],
+          "properties": {
+            "length": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Longest shell measurement in mm/200, e.g. 0.475 (= 95 mm)."
+            },
+            "diameter": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Shell diameter perpendicular to length, in mm/200."
+            },
+            "height": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.5,
+              "description": "Height with meat in shell, in mm/200. Must be greater than 0."
+            },
+            "whole_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 4.0,
+              "description": "Whole abalone weight in g/200."
+            },
+            "shucked_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 2.0,
+              "description": "Meat weight in g/200."
+            },
+            "viscera_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.0,
+              "description": "Gut weight after bleeding, in g/200."
+            },
+            "shell_weight": {
+              "type": "number",
+              "minimum": 0.0005,
+              "maximum": 1.5,
+              "description": "Dried shell weight in g/200."
+            },
+            "number_of_rings": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 40,
+              "description": "Ring count; age in years is about rings + 1.5."
+            }
+          }
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "required": [
+      "ok",
+      "tool_id",
+      "version"
+    ],
+    "properties": {
+      "ok": {
+        "type": "boolean",
+        "description": "True when every specimen was scored; false with 'error' otherwise."
+      },
+      "tool_id": {
+        "type": "string",
+        "description": "Identifier of the tool that produced this response."
+      },
+      "version": {
+        "type": "string",
+        "description": "Version of the tool."
+      },
+      "result": {
+        "type": "object",
+        "required": [
+          "predictions",
+          "model_card"
+        ],
+        "properties": {
+          "predictions": {
+            "type": "array",
+            "description": "One entry per input specimen, in input order.",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "verdict",
+                "sex_candidates",
+                "abstained",
+                "confidence",
+                "deciding_rule",
+                "fired_rules",
+                "adult_base_rates",
+                "flags"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Position in the input specimens list."
+                },
+                "verdict": {
+                  "type": "string",
+                  "enum": [
+                    "I",
+                    "ADULT"
+                  ]
+                },
+                "sex_candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "M",
+                      "F",
+                      "I"
+                    ]
+                  }
+                },
+                "abstained": {
+                  "type": "boolean",
+                  "description": "True for adults: the tool does not choose between M and F."
+                },
+                "confidence": {
+                  "type": "string",
+                  "description": "Confidence label of the deciding rule (high, medium or default)."
+                },
+                "deciding_rule": {
+                  "type": "string"
+                },
+                "fired_rules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "text",
+                      "verdict",
+                      "train_precision",
+                      "train_coverage"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "verdict": {
+                        "type": "string",
+                        "enum": [
+                          "I",
+                          "ADULT"
+                        ]
+                      },
+                      "train_precision": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Share of training specimens matching the verdict among those where the rule fires; null when the stats are stale."
+                      },
+                      "train_coverage": {
+                        "type": [
+                          "number",
+                          "null"
+                        ],
+                        "description": "Share of training specimens where the rule fires; null when the stats are stale."
+                      }
+                    }
+                  },
+                  "description": "Rules that fired, deciding rule first; the default entry when none fired."
+                },
+                "adult_base_rates": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "M": {
+                      "type": "number"
+                    },
+                    "F": {
+                      "type": "number"
+                    }
+                  },
+                  "description": "Share of males and females among training adults; null for infants."
+                },
+                "flags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "out_of_distribution",
+                      "inconsistent_weights"
+                    ]
+                  },
+                  "description": "out_of_distribution: some value lies outside P0.5-P99.5 of the training data. inconsistent_weights: shucked + viscera + shell > 1.1 x whole."
+                }
+              }
+            }
+          },
+          "model_card": {
+            "type": "object",
+            "required": [
+              "algorithm",
+              "rules",
+              "trained_on",
+              "holdout_metrics",
+              "stale"
+            ],
+            "properties": {
+              "algorithm": {
+                "type": "string"
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "text",
+                    "verdict",
+                    "confidence"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "verdict": {
+                      "type": "string"
+                    },
+                    "confidence": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "trained_on": {
+                "type": "string"
+              },
+              "holdout_metrics": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "infant_vs_adult_accuracy": {
+                    "type": "number"
+                  },
+                  "infant_precision": {
+                    "type": "number"
+                  },
+                  "infant_recall": {
+                    "type": "number"
+                  },
+                  "n_test": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "stale": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "flags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Every per-specimen flag plus tool-level flags, sorted."
+      },
+      "warnings": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Caveats to carry into the agent's summary."
+      },
+      "error": {
+        "type": "object",
+        "required": [
+          "type",
+          "message"
+        ],
+        "description": "Present when ok is false.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "input_error",
+              "artifact_missing",
+              "runtime_error"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "What went wrong and how to fix the call."
+          }
+        }
+      },
+      "disclaimer": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "config": {
+    "metrics_path": "artifacts/models/abalone/metrics.json",
+    "max_specimens": 50,
+    "rules": [
+      {
+        "id": "R1",
+        "verdict": "I",
+        "confidence": "high",
+        "text": "shell_weight <= 0.17 and number_of_rings <= 8: light shell with few rings -> infant",
+        "conditions": [
+          {
+            "feature": "shell_weight",
+            "op": "<=",
+            "value": 0.17
+          },
+          {
+            "feature": "number_of_rings",
+            "op": "<=",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "id": "R2",
+        "verdict": "I",
+        "confidence": "medium",
+        "text": "diameter <= 0.36 and number_of_rings <= 9: small shell with few rings -> infant",
+        "conditions": [
+          {
+            "feature": "diameter",
+            "op": "<=",
+            "value": 0.36
+          },
+          {
+            "feature": "number_of_rings",
+            "op": "<=",
+            "value": 9
+          }
+        ]
+      }
+    ],
+    "default": {
+      "id": "DEFAULT",
+      "verdict": "ADULT",
+      "confidence": "default",
+      "text": "No infant rule fired -> adult; male vs female cannot be decided from shell measurements."
+    },
+    "default_timeout_s": 5
+  },
+  "examples": [
+    {
+      "input": {
+        "specimens": [
+          {
+            "length": 0.475,
+            "diameter": 0.365,
+            "height": 0.13,
+            "whole_weight": 0.4805,
+            "shucked_weight": 0.1905,
+            "viscera_weight": 0.114,
+            "shell_weight": 0.1475,
+            "number_of_rings": 12
+          }
+        ]
+      },
+      "expected_flags": []
+    }
+  ],
+  "deterministic": true,
+  "side_effects": "read",
+  "disclaimer": "Expert heuristic for infant vs adult from shell size and ring count; it never claims male or female.",
+  "references": [
+    "code/tools/abalone/sex_experts.py",
+    "code/tools/abalone/train_abalone_tools.py",
+    "code/tools/abalone/README.md"
+  ],
+  "mcp": {
+    "expose": true,
+    "server": "abalone_tools",
+    "title": "Abalone sex - Maturity rules (expert)",
+    "entrypoint": "code/tools/abalone/sex_experts.py::predict_maturity_rules",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  }
+}

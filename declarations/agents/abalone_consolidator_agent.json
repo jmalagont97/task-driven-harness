@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_consolidator_agent",
+  "name": "Abalone Lead Data Scientist & Decision Arbiter",
+  "version": "0.1.0",
+  "description": "Terminal reviewer for the Abalone flow. Reads every tool opinion on the blackboard, checks that the specialists followed the evidence rules and issues the final sex and age answer per specimen.",
+  "enabled": true,
+
+  "role": {
+    "type": "reviewer",
+    "permissions": {
+      "can_receive_tasks": true,
+      "can_use_tools": false,
+      "can_use_expert_tools": false,
+      "can_use_rag": false,
+      "can_use_data_knowledge": false,
+      "can_write_external": false,
+      "can_finish_task": true
+    },
+    "reports_to": null
+  },
+
+  "prompt": {
+    "template_format": "mustache",
+    "template": "# ROLE\n{{role}}\n\n# CORE MISSION\n{{task}}\n\n# PROBLEM CONTEXT (BLACKBOARD)\n{{inputs}}\n\n# NON-NEGOTIABLE RULES\n{{rules}}\n\n# REQUIRED OUTPUT FORMAT\n{{output_format}}",
+    "role": "You are the lead data scientist who signs off the final answer. You work in read-only mode: you do not call tools, you judge the evidence the specialists wrote on the blackboard.",
+    "task": "For every specimen in problem_spec, give the final answer for the requested task (sex, age or both) with a reliability label and a short rationale grounded in the tool opinions on the blackboard.",
+    "rules": [
+      "Check that each specialist consulted at least one ML tool and one expert tool; if not, lower the reliability of that answer and say why.",
+      "Do not reward male vs female accuracy that the data cannot support: if any tool flagged mf_ambiguous or the rules tool abstained, the final sex answer is 'adult_undetermined'.",
+      "When the sex tools disagree on infant vs adult, the final maturity is 'uncertain' unless at least three of the four tools agree.",
+      "For age, give the median of the tools' point estimates and the range covered by their 80% intervals. If the intervals do not overlap, mark the specimen as atypical with reliability 'low'.",
+      "Carry every tool warning that affects a final answer into the rationale (tail_region, sparse_cell, out_of_distribution, out_of_profile, inconsistent_weights).",
+      "Use only figures that appear on the blackboard; never invent probabilities or metrics.",
+      "Always provide a clean Markdown summary in 'markdown_summary' ready to be stamped into blackboard.md under final_decision.",
+      "Respond strictly using the JSON format defined in output_format."
+    ],
+    "inputs": [
+      {
+        "name": "problem_spec",
+        "type": "string",
+        "required": true,
+        "description": "Task and specimens."
+      },
+      {
+        "name": "sex_tool_opinions",
+        "type": "string",
+        "required": false,
+        "description": "Section written by abalone_sex_agent."
+      },
+      {
+        "name": "age_tool_opinions",
+        "type": "string",
+        "required": false,
+        "description": "Section written by abalone_age_agent."
+      }
+    ],
+    "tools": {
+      "render": "none",
+      "description": "No tools: this agent only reads the blackboard.",
+      "usage_policy": []
+    },
+    "output_format": {
+      "type": "json",
+      "schema": {
+        "type": "object",
+        "required": ["status", "result", "warnings"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["completed", "partial", "failed"]
+          },
+          "result": {
+            "type": "object",
+            "required": ["final_answers", "markdown_summary"],
+            "properties": {
+              "final_answers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["index", "reliability", "rationale"],
+                  "properties": {
+                    "index": { "type": "integer" },
+                    "sex_answer": { "type": "string", "enum": ["M", "F", "I", "adult_undetermined", "undetermined"] },
+                    "age_answer": {
+                      "type": "object",
+                      "properties": {
+                        "rings": { "type": "number" },
+                        "rings_range": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+                        "age_years": { "type": "number" }
+                      }
+                    },
+                    "reliability": { "type": "string", "enum": ["high", "medium", "low"] },
+                    "rationale": { "type": "string" }
+                  }
+                }
+              },
+              "markdown_summary": { "type": "string", "description": "Markdown inserted by the runtime into blackboard.md under final_decision." }
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+
+  "tools": [],
+
+  "expert_tools": [],
+
+  "knowledge": {
+    "rag": { "enabled": false },
+    "data_knowledge": { "enabled": false }
+  },
+
+  "model": {
+    "provider": "google_genai",
+    "deployment": "remote",
+    "model_name": "gemini-2.5-pro",
+    "connection": {
+      "base_url": null,
+      "api_key_env": "GEMINI_API_KEY",
+      "timeout_s": 120,
+      "max_retries": 2,
+      "headers": {},
+      "proxy_env": null
+    },
+    "parameters": {
+      "temperature": 0.1,
+      "top_p": null,
+      "max_tokens": 4096,
+      "stop": [],
+      "seed": 42
+    },
+    "capabilities": {
+      "tool_calling": false,
+      "structured_output": true,
+      "streaming": true,
+      "vision": false
+    },
+    "billing": {
+      "paid": false,
+      "currency": "USD"
+    },
+    "fallback": []
+  },
+
+  "memory": {
+    "short_term": {
+      "enabled": true,
+      "backend": "memory",
+      "path": null,
+      "max_messages": 20
+    },
+    "long_term": {
+      "enabled": false
+    }
+  },
+
+  "guardrails": {
+    "disclaimer": "Final answers are statistical estimates from shell measurements, not biological determinations.",
+    "sensitive_data": {
+      "redact_in_logs": true,
+      "allowed_identifiers": []
+    },
+    "human_in_the_loop": {
+      "enabled": false
+    },
+    "forbidden_actions": [
+      "Call tools or modify artifacts",
+      "Overwrite sections of the blackboard other than final_decision"
+    ],
+    "output_validation": {
+      "enforce_schema": true,
+      "on_failure": "retry",
+      "max_retries": 2
+    }
+  },
+
+  "runtime": {
+    "max_iterations": 2,
+    "timeout_s": 120,
+    "parallel_tool_calls": false,
+    "streaming": true,
+    "adapters": {}
+  },
+
+  "observability": {
+    "log_level": "INFO",
+    "tracing": {
+      "enabled": false,
+      "provider": "none"
+    }
+  },
+
+  "metadata": {
+    "owner": "Task-Driven Harness",
+    "created_at": "2026-10-17",
+    "updated_at": "2026-10-17",
+    "tags": ["abalone", "reviewer", "consolidator", "final_decision"]
+  }
+}

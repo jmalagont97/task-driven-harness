@@ -1,0 +1,131 @@
+{
+  "$schema_description": "Conversational Flow Graph Specification for the Task-Driven ML Harness",
+  "header": {
+    "flow_id": "flow_abalone_tool_opinions_v1",
+    "name": "Abalone Sex and Age Estimation with ML and Expert Tools",
+    "version": "0.1.0",
+    "author": "Task-Driven Harness Architecture",
+    "description": "Answers sex and/or age questions about abalone specimens. A sex specialist and an age specialist each consult two ML tools and two expert tools over MCP (server 'abalone_tools'); a read-only consolidator weighs their opinions and issues the final answer per specimen.",
+    "graph_properties": {
+      "is_cyclic": false,
+      "supports_bidirectional_dialogue": false,
+      "loop_prevention_mechanism": "Acyclic graph: every node runs at most once (max_visits = 1) and the global turn limit forces the terminal node.",
+      "blackboard_integration": "Each agent reads the sections in read_sections and writes only its own section. The two tool-opinion sections are declared in blackboard_sections because the default blackboard.md does not contain them; the runtime adds them when the flow starts."
+    }
+  },
+
+  "problem_spec_contract": {
+    "description": "What infer.py must write into the problem_spec section before this flow starts.",
+    "schema": {
+      "type": "object",
+      "required": ["task", "specimens"],
+      "properties": {
+        "task": {
+          "type": "string",
+          "enum": ["sex", "age", "both"]
+        },
+        "specimens": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "description": "length, diameter, height, whole_weight, shucked_weight, viscera_weight and shell_weight in dataset units (mm or g divided by 200), plus 'sex' and/or 'number_of_rings' when they are known."
+          }
+        }
+      }
+    }
+  },
+
+  "blackboard_sections": [
+    {
+      "id": "sex_tool_opinions",
+      "title": "Sex Tool Opinions",
+      "placeholder": "*Pending analysis by the Abalone Sex Agent...*",
+      "insert_after": "problem_spec"
+    },
+    {
+      "id": "age_tool_opinions",
+      "title": "Age Tool Opinions",
+      "placeholder": "*Pending analysis by the Abalone Age Agent...*",
+      "insert_after": "sex_tool_opinions"
+    }
+  ],
+
+  "mcp_servers": {
+    "abalone_tools": {
+      "command": ".venv/bin/python",
+      "args": ["code/mcp_server.py", "--server", "abalone_tools"],
+      "description": "Serves the eight declarations/tools/abalone_*.json tools over stdio. Same entry as .mcp.json for external MCP clients."
+    }
+  },
+
+  "global_guards": {
+    "global_max_turns": 6,
+    "execution_timeout_seconds": 600,
+    "on_global_limit_action": "force_transition_to_terminal_node"
+  },
+
+  "entry_node": "abalone_sex_agent",
+  "terminal_node": "abalone_consolidator_agent",
+
+  "nodes": {
+    "abalone_sex_agent": {
+      "agent_declaration": "declarations/agents/abalone_sex_agent.json",
+      "role": "Sex Estimation Specialist",
+      "description": "Consults the sex tools (two ML, two expert) for every specimen and reports one call per specimen with its reliability. Skips the tools when only age is requested and every sex is known.",
+      "max_visits": 1,
+      "blackboard_permissions": {
+        "read_sections": ["problem_spec"],
+        "write_section": "sex_tool_opinions"
+      }
+    },
+    "abalone_age_agent": {
+      "agent_declaration": "declarations/agents/abalone_age_agent.json",
+      "role": "Age Estimation Specialist",
+      "description": "Consults the age tools (two ML, two expert) for every specimen, using the sex calls when the sex is not given, and reports a ring estimate with a range and reliability.",
+      "max_visits": 1,
+      "blackboard_permissions": {
+        "read_sections": ["problem_spec", "sex_tool_opinions"],
+        "write_section": "age_tool_opinions"
+      }
+    },
+    "abalone_consolidator_agent": {
+      "agent_declaration": "declarations/agents/abalone_consolidator_agent.json",
+      "role": "Lead Data Scientist & Decision Arbiter",
+      "description": "Terminal node. Reads every tool opinion, checks the evidence rules and writes the final answer per specimen.",
+      "max_visits": 1,
+      "blackboard_permissions": {
+        "read_sections": ["*"],
+        "write_section": "final_decision"
+      }
+    }
+  },
+
+  "edges": [
+    {
+      "edge_id": "edge_sex_to_age",
+      "from": "abalone_sex_agent",
+      "to": "abalone_age_agent",
+      "bidirectional": false,
+      "description": "Age is requested: hand over the sex calls so the age agent can choose the sex argument of the age tools.",
+      "transition_condition": "problem_spec.task in ['age', 'both']"
+    },
+    {
+      "edge_id": "edge_sex_to_consolidator",
+      "from": "abalone_sex_agent",
+      "to": "abalone_consolidator_agent",
+      "bidirectional": false,
+      "description": "Only sex was requested: go straight to the final decision.",
+      "transition_condition": "problem_spec.task == 'sex'"
+    },
+    {
+      "edge_id": "edge_age_to_consolidator",
+      "from": "abalone_age_agent",
+      "to": "abalone_consolidator_agent",
+      "bidirectional": false,
+      "description": "Age estimates are on the blackboard: hand over to the arbiter.",
+      "transition_condition": "blackboard.has_section('age_tool_opinions') == true"
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_sex_agent",
+  "name": "Abalone Sex Estimation Specialist",
+  "version": "0.1.0",
+  "description": "Estimates abalone sex (M/F/I) by consulting two ML tools and two expert tools over MCP, reconciling their opinions and stating how reliable each call is.",
+  "enabled": true,
+
+  "role": {
+    "type": "specialist",
+    "permissions": {
+      "can_receive_tasks": true,
+      "can_use_tools": true,
+      "can_use_expert_tools": true,
+      "can_use_rag": false,
+      "can_use_data_knowledge": false,
+      "can_write_external": false,
+      "can_finish_task": true
+    },
+    "reports_to": "abalone_consolidator_agent"
+  },
+
+  "prompt": {
+    "template_format": "mustache",
+    "template": "# ROLE\n{{role}}\n\n# CORE MISSION\n{{task}}\n\n# PROBLEM CONTEXT (BLACKBOARD)\n{{inputs}}\n\n# NON-NEGOTIABLE RULES\n{{rules}}\n\n# ASSIGNED TOOLS\n{{tools}}\n\n# REQUIRED OUTPUT FORMAT\n{{output_format}}",
+    "role": "You are a marine-biology data scientist who estimates the sex of abalone from shell measurements by weighing the opinions of statistical models and expert tools.",
+    "task": "Read the specimens in problem_spec. When problem_spec.task is 'sex' or 'both', call at least one ML tool and one expert tool on every specimen, compare their answers and give one call per specimen with its reliability. When problem_spec.task is 'age' and every specimen already has a sex, do not call any tool: return status 'skipped' and say that sex was provided.",
+    "rules": [
+      "Send measurements in dataset units: the original millimetres or grams divided by 200 (95 mm -> 0.475). Never send 'sex' to these tools; it is what they predict.",
+      "Call at least one tool from 'tools' (ML) and one from 'expert_tools' for every specimen. Batch up to 50 specimens per call.",
+      "If a tool answers ok = false with error.type 'input_error', fix the arguments exactly as error.message says and retry once. Report 'artifact_missing' or 'runtime_error' as a warning; do not retry them.",
+      "Infant vs adult is the reliable part of the answer (about 80% hold-out accuracy). Male vs female is near chance (about 52-55% among adults).",
+      "Never give M or F as the answer when any tool flags 'mf_ambiguous' or when abalone_sex_maturity_rules abstains; report 'adult_undetermined' and give the probabilities instead.",
+      "When tools disagree on infant vs adult, report the disagreement and the probability or rule behind each opinion; do not average it away. A 'maturity_uncertain' flag lowers reliability to 'low'.",
+      "Quote hold-out metrics from each tool's model_card; never invent a confidence figure.",
+      "Always provide a clean Markdown summary in 'markdown_summary' ready to be stamped into blackboard.md under sex_tool_opinions.",
+      "Respond strictly using the JSON format defined in output_format."
+    ],
+    "inputs": [
+      {
+        "name": "problem_spec",
+        "type": "string",
+        "required": true,
+        "description": "Content of the problem_spec section of blackboard.md: task ('sex' | 'age' | 'both') and the specimens to analyse."
+      }
+    ],
+    "tools": {
+      "render": "auto_from_bindings",
+      "description": "MCP tools served by code/mcp_server.py (server 'abalone_tools'). Two ML models in 'tools' and two expert tools in 'expert_tools'.",
+      "usage_policy": [
+        "Start with abalone_sex_maturity_rules for the infant vs adult verdict, then ask one ML tool for probabilities.",
+        "Use abalone_sex_logistic_regression or abalone_sex_bivariate_profile as a tie-breaker when the first two disagree.",
+        "Treat a tool's 'warnings' as caveats that must appear in the summary."
+      ]
+    },
+    "output_format": {
+      "type": "json",
+      "schema": {
+        "type": "object",
+        "required": ["status", "result", "warnings"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["completed", "partial", "failed", "skipped"]
+          },
+          "result": {
+            "type": "object",
+            "required": ["specimen_calls", "tools_called", "discrepancies", "markdown_summary"],
+            "properties": {
+              "specimen_calls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["index", "maturity", "sex_call", "reliability", "evidence"],
+                  "properties": {
+                    "index": { "type": "integer", "description": "Position of the specimen in problem_spec.specimens." },
+                    "maturity": { "type": "string", "enum": ["infant", "adult", "uncertain"] },
+                    "sex_call": { "type": "string", "enum": ["M", "F", "I", "adult_undetermined", "undetermined"] },
+                    "reliability": { "type": "string", "enum": ["high", "medium", "low"] },
+                    "evidence": { "type": "string", "description": "One line per tool: name, answer and the probability or rule that backs it." }
+                  }
+                }
+              },
+              "tools_called": { "type": "array", "items": { "type": "string" } },
+              "discrepancies": { "type": "array", "items": { "type": "string" }, "description": "Specimens where the tools disagree, and how." },
+              "markdown_summary": { "type": "string", "description": "Markdown inserted by the runtime into blackboard.md under sex_tool_opinions." }
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+
+  "tools": [
+    {
+      "tool_id": "abalone_sex_random_forest",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Probabilistic non-linear opinion on M/F/I. Report mf_ambiguous predictions as 'adult_undetermined'.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 10
+    },
+    {
+      "tool_id": "abalone_sex_logistic_regression",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Linear, better-calibrated opinion with per-specimen contributions; use it to confirm or challenge the forest.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 10
+    }
+  ],
+
+  "expert_tools": [
+    {
+      "tool_id": "abalone_sex_maturity_rules",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Transparent infant-vs-adult rules. Abstains on M/F by design; quote the fired rule.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 5
+    },
+    {
+      "tool_id": "abalone_sex_bivariate_profile",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Two-variable Bayes estimate (diameter, rings); 'out_of_profile' means the specimen is atypical.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 5
+    }
+  ],
+
+  "knowledge": {
+    "rag": { "enabled": false },
+    "data_knowledge": { "enabled": false }
+  },
+
+  "model": {
+    "provider": "google_genai",
+    "deployment": "remote",
+    "model_name": "gemini-2.5-pro",
+    "connection": {
+      "base_url": null,
+      "api_key_env": "GEMINI_API_KEY",
+      "timeout_s": 120,
+      "max_retries": 2,
+      "headers": {},
+      "proxy_env": null
+    },
+    "parameters": {
+      "temperature": 0.1,
+      "top_p": null,
+      "max_tokens": 4096,
+      "stop": [],
+      "seed": 42
+    },
+    "capabilities": {
+      "tool_calling": true,
+      "structured_output": true,
+      "streaming": true,
+      "vision": false
+    },
+    "billing": {
+      "paid": false,
+      "currency": "USD"
+    },
+    "fallback": []
+  },
+
+  "memory": {
+    "short_term": {
+      "enabled": true,
+      "backend": "memory",
+      "path": null,
+      "max_messages": 20
+    },
+    "long_term": {
+      "enabled": false
+    }
+  },
+
+  "guardrails": {
+    "disclaimer": "Sex is estimated from shell measurements; male vs female calls are weak evidence.",
+    "sensitive_data": {
+      "redact_in_logs": true,
+      "allowed_identifiers": []
+    },
+    "human_in_the_loop": {
+      "enabled": false
+    },
+    "forbidden_actions": [
+      "Delete or overwrite raw dataset files or trained artifacts on disk",
+      "Retrain or modify the models behind the tools",
+      "Attempt unauthorized external network requests"
+    ],
+    "output_validation": {
+      "enforce_schema": true,
+      "on_failure": "retry",
+      "max_retries": 2
+    }
+  },
+
+  "runtime": {
+    "max_iterations": 6,
+    "timeout_s": 180,
+    "parallel_tool_calls": true,
+    "streaming": true,
+    "adapters": {}
+  },
+
+  "observability": {
+    "log_level": "INFO",
+    "tracing": {
+      "enabled": false,
+      "provider": "none"
+    }
+  },
+
+  "metadata": {
+    "owner": "Task-Driven Harness",
+    "created_at": "2026-10-17",
+    "updated_at": "2026-10-17",
+    "tags": ["abalone", "sex_classification", "specialist", "mcp_tools"]
+  }
+}
