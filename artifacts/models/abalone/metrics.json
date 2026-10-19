@@ -1,0 +1,338 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-10-16T22:09:35+00:00",
+  "library_versions": {
+    "python": "3.12.3",
+    "scikit-learn": "1.4.2",
+    "numpy": "1.26.4",
+    "pandas": "2.1.4"
+  },
+  "dataset": {
+    "path": "artifacts/datasets/abalone_dataset/train/abalone_dataset.csv",
+    "sha256": "92160a5732cdd8542ad72ceaf9ed037de78b9edd40bdad368284658cd9394f6a",
+    "rows": 4177
+  },
+  "split": {
+    "path": "artifacts/datasets/abalone_dataset/splits.json",
+    "fingerprint": "5e544c73e0c85ad4",
+    "train_rows": 3340,
+    "test_rows": 835,
+    "excluded_rows": [
+      1257,
+      3996
+    ]
+  },
+  "train_profile": {
+    "ranges": {
+      "length": [
+        0.17,
+        0.75
+      ],
+      "diameter": [
+        0.125,
+        0.591525
+      ],
+      "height": [
+        0.038475,
+        0.23
+      ],
+      "whole_weight": [
+        0.024348,
+        2.281845
+      ],
+      "shucked_weight": [
+        0.009,
+        1.08666
+      ],
+      "viscera_weight": [
+        0.005,
+        0.509762
+      ],
+      "shell_weight": [
+        0.008,
+        0.67572
+      ],
+      "number_of_rings": [
+        4.0,
+        22.0
+      ]
+    },
+    "quantiles": [
+      0.005,
+      0.995
+    ],
+    "out_of_distribution_rate": 0.0305,
+    "inconsistent_weights_rate": 0.009
+  },
+  "tools": {
+    "abalone_sex_random_forest": {
+      "family": "ml",
+      "algorithm": "RandomForestClassifier(n_estimators=500, min_samples_leaf=3, random_state=42)",
+      "features": [
+        "length",
+        "diameter",
+        "height",
+        "whole_weight",
+        "shucked_weight",
+        "viscera_weight",
+        "shell_weight",
+        "number_of_rings",
+        "shell_ratio",
+        "shucked_ratio",
+        "viscera_ratio"
+      ],
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "top_features": [
+        "viscera_weight",
+        "whole_weight",
+        "shell_weight"
+      ],
+      "calibration": {
+        "ece_train_out_of_fold": 0.0418,
+        "threshold": 0.05,
+        "calibrated": false
+      },
+      "holdout_metrics": {
+        "accuracy": 0.5437,
+        "macro_f1": 0.5388,
+        "infant_vs_adult_accuracy": 0.8228,
+        "majority_baseline": 0.3665,
+        "mf_accuracy_among_adults": 0.5166,
+        "mf_majority_baseline": 0.5397,
+        "mf_ambiguous_rate": 0.3596,
+        "expected_calibration_error": 0.0629,
+        "per_class_recall": {
+          "M": 0.5098,
+          "F": 0.3563,
+          "I": 0.7649
+        },
+        "n_test": 835
+      }
+    },
+    "abalone_sex_logistic_regression": {
+      "family": "ml",
+      "algorithm": "StandardScaler + multinomial LogisticRegression(lbfgs, C=1.0, max_iter=3000)",
+      "features": [
+        "length",
+        "diameter",
+        "height",
+        "whole_weight",
+        "shucked_weight",
+        "viscera_weight",
+        "shell_weight",
+        "number_of_rings",
+        "shell_ratio",
+        "shucked_ratio",
+        "viscera_ratio"
+      ],
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "top_features": [
+        "shucked_weight",
+        "length",
+        "diameter"
+      ],
+      "calibration": {
+        "ece_train_out_of_fold": 0.013,
+        "threshold": 0.05,
+        "calibrated": false
+      },
+      "holdout_metrics": {
+        "accuracy": 0.5569,
+        "macro_f1": 0.5451,
+        "infant_vs_adult_accuracy": 0.8,
+        "majority_baseline": 0.3665,
+        "mf_accuracy_among_adults": 0.5509,
+        "mf_majority_baseline": 0.5397,
+        "mf_ambiguous_rate": 0.6151,
+        "expected_calibration_error": 0.0332,
+        "per_class_recall": {
+          "M": 0.5163,
+          "F": 0.3487,
+          "I": 0.806
+        },
+        "n_test": 835
+      }
+    },
+    "abalone_sex_maturity_rules": {
+      "family": "expert",
+      "algorithm": "Expert maturity rules on shell size and ring count (first rule that fires decides); abstains on male vs female",
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "rules_fingerprint": "{\"default\": {\"confidence\": \"default\", \"id\": \"DEFAULT\", \"text\": \"No infant rule fired -> adult; male vs female cannot be decided from shell measurements.\", \"verdict\": \"ADULT\"}, \"rules\": [{\"conditions\": [{\"feature\": \"shell_weight\", \"op\": \"<=\", \"value\": 0.17}, {\"feature\": \"number_of_rings\", \"op\": \"<=\", \"value\": 8}], \"confidence\": \"high\", \"id\": \"R1\", \"text\": \"shell_weight <= 0.17 and number_of_rings <= 8: light shell with few rings -> infant\", \"verdict\": \"I\"}, {\"conditions\": [{\"feature\": \"diameter\", \"op\": \"<=\", \"value\": 0.36}, {\"feature\": \"number_of_rings\", \"op\": \"<=\", \"value\": 9}], \"confidence\": \"medium\", \"id\": \"R2\", \"text\": \"diameter <= 0.36 and number_of_rings <= 9: small shell with few rings -> infant\", \"verdict\": \"I\"}]}",
+      "rule_stats": {
+        "R1": {
+          "train_coverage": 0.2557,
+          "train_precision": 0.7787
+        },
+        "R2": {
+          "train_coverage": 0.2488,
+          "train_precision": 0.7581
+        },
+        "DEFAULT": {
+          "train_coverage": 0.7111,
+          "train_precision": 0.848
+        }
+      },
+      "adult_base_rates": {
+        "M": 0.5388,
+        "F": 0.4612
+      },
+      "reference_tree": "|--- shell_weight <= 0.19\n|   |--- number_of_rings <= 8.50\n|   |   |--- class: I\n|   |--- number_of_rings >  8.50\n|   |   |--- class: ADULT\n|--- shell_weight >  0.19\n|   |--- shell_weight <= 0.26\n|   |   |--- class: ADULT\n|   |--- shell_weight >  0.26\n|   |   |--- class: ADULT\n",
+      "holdout_metrics": {
+        "infant_vs_adult_accuracy": 0.812,
+        "infant_precision": 0.7322,
+        "infant_recall": 0.653,
+        "n_test": 835
+      }
+    },
+    "abalone_sex_bivariate_profile": {
+      "family": "expert",
+      "algorithm": "Bivariate normal class profiles of (diameter, number_of_rings) combined with class priors by Bayes' rule",
+      "features": [
+        "diameter",
+        "number_of_rings"
+      ],
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "holdout_metrics": {
+        "accuracy": 0.5269,
+        "macro_f1": 0.5262,
+        "infant_vs_adult_accuracy": 0.7904,
+        "majority_baseline": 0.3665,
+        "mf_accuracy_among_adults": 0.5269,
+        "mf_majority_baseline": 0.5397,
+        "mf_ambiguous_rate": 0.8792,
+        "expected_calibration_error": 0.0321,
+        "per_class_recall": {
+          "M": 0.366,
+          "F": 0.5096,
+          "I": 0.7276
+        },
+        "n_test": 835
+      }
+    },
+    "abalone_age_gradient_boosting": {
+      "family": "ml",
+      "algorithm": "HistGradientBoostingRegressor(max_iter=300, learning_rate=0.05, random_state=42) on log1p(rings)",
+      "features": [
+        "length",
+        "diameter",
+        "height",
+        "whole_weight",
+        "shucked_weight",
+        "viscera_weight",
+        "shell_weight",
+        "sex_F",
+        "sex_I",
+        "sex_M",
+        "shell_ratio",
+        "shucked_ratio",
+        "viscera_ratio"
+      ],
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "interval": {
+        "method": "cross-conformal",
+        "level": 0.8,
+        "half_width_rings": 2.3301
+      },
+      "holdout_metrics": {
+        "mae": 1.514,
+        "rmse": 2.1847,
+        "r2": 0.5545,
+        "within_2_rings": 0.7533,
+        "interval_coverage": 0.8012,
+        "interval_mean_width": 4.66,
+        "median_baseline_mae": 2.394,
+        "mae_by_age_group": {
+          "Young (1-7)": 1.0487,
+          "Young Adult (8-10)": 1.0884,
+          "Adult (11-15)": 1.7919,
+          "Old (16+)": 4.9916
+        },
+        "n_test": 835
+      }
+    },
+    "abalone_age_ridge_regression": {
+      "family": "ml",
+      "algorithm": "StandardScaler + RidgeCV(alphas=logspace(-3, 3, 25)) on raw rings",
+      "features": [
+        "length",
+        "diameter",
+        "height",
+        "whole_weight",
+        "shucked_weight",
+        "viscera_weight",
+        "shell_weight",
+        "sex_F",
+        "sex_I",
+        "sex_M",
+        "shell_ratio",
+        "shucked_ratio",
+        "viscera_ratio"
+      ],
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "interval": {
+        "method": "cross-conformal",
+        "level": 0.8,
+        "half_width_rings": 2.3745
+      },
+      "holdout_metrics": {
+        "mae": 1.6507,
+        "rmse": 2.5446,
+        "r2": 0.3956,
+        "within_2_rings": 0.7317,
+        "interval_coverage": 0.7964,
+        "interval_mean_width": 4.692,
+        "median_baseline_mae": 2.394,
+        "mae_by_age_group": {
+          "Young (1-7)": 1.4977,
+          "Young Adult (8-10)": 1.1978,
+          "Adult (11-15)": 1.7645,
+          "Old (16+)": 5.0912
+        },
+        "n_test": 835
+      }
+    },
+    "abalone_age_allometric_formula": {
+      "family": "expert",
+      "algorithm": "Allometric power law rings = a * shell_weight^b fitted per sex by least squares on log-log scale",
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "holdout_metrics": {
+        "mae": 1.7484,
+        "rmse": 2.5098,
+        "r2": 0.412,
+        "within_2_rings": 0.703,
+        "interval_coverage": 0.8263,
+        "interval_mean_width": 5.3435,
+        "median_baseline_mae": 2.394,
+        "mae_by_age_group": {
+          "Young (1-7)": 1.1155,
+          "Young Adult (8-10)": 1.3236,
+          "Adult (11-15)": 1.7932,
+          "Old (16+)": 6.8738
+        },
+        "n_test": 835
+      }
+    },
+    "abalone_age_shell_weight_lookup": {
+      "family": "expert",
+      "algorithm": "Empirical table: shell_weight decile x sex -> median ring count and P10-P90 of training specimens",
+      "trained_on": "splits.json train split: 3340 rows, seed 42, fingerprint 5e544c73e0c85ad4",
+      "sparse_cells": 3,
+      "holdout_metrics": {
+        "mae": 1.7353,
+        "rmse": 2.6525,
+        "r2": 0.3433,
+        "within_2_rings": 0.7976,
+        "interval_coverage": 0.8491,
+        "interval_mean_width": 5.2041,
+        "median_baseline_mae": 2.394,
+        "mae_by_age_group": {
+          "Young (1-7)": 1.1524,
+          "Young Adult (8-10)": 1.0326,
+          "Adult (11-15)": 2.0506,
+          "Old (16+)": 7.55
+        },
+        "n_test": 835
+      }
+    }
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "collection": "Source literature for the UCI Abalone dataset (blacklip abalone, Haliotis rubra, Tasmania and Victoria, Australia)",
+  "language": "en",
+  "page_markers": "In the article files, [p. N] marks the start of page N of the printed publication. For the Nash et al. (1994) report, printed page N = PDF page N + 5.",
+  "bracket_conventions": {
+    "[Figure description: ...]": "Description of a figure written by the editor of this collection; not part of the original text.",
+    "[Figure description (approximate values read from the graph): ...]": "As above; the numbers were read by eye from the plotted graph and are approximate.",
+    "[Figure data: ...]": "Numbers printed on the figure itself (equations, sample sizes, test statistics), transcribed exactly unless stated otherwise.",
+    "[sic; ...]": "Error or inconsistency in the original, reproduced as printed, with a short correction.",
+    "[handwritten correction: ...] / [Handwritten annotation ...]": "Handwriting present on the scanned copy, not part of the printed text."
+  },
+  "documents": [
+    {
+      "id": "nash_et_al_1994_tr48",
+      "file": "01_Nash_et_al_1994_TechReport48_population_biology.md",
+      "citation": "Nash, W. J., Sellers, T. L., Talbot, S. R., Cawthorn, A. J. and Ford, W. B. (1994). The Population Biology of Abalone (Haliotis species) in Tasmania. I. Blacklip Abalone (H. rubra) from the North Coast and the Islands of Bass Strait. Sea Fisheries Division, Technical Report No. 48. ISSN 1034-3288.",
+      "title": "The Population Biology of Abalone (Haliotis species) in Tasmania. I. Blacklip Abalone (H. rubra) from the North Coast and the Islands of Bass Strait",
+      "authors": ["Warwick J. Nash", "Tracy L. Sellers", "Simon R. Talbot", "Andrew J. Cawthorn", "Wes B. Ford"],
+      "year": 1994,
+      "type": "technical report",
+      "publisher": "Sea Fisheries Division, Marine Research Laboratories - Taroona, Department of Primary Industry and Fisheries, Tasmania",
+      "series": "Technical Report No. 48",
+      "issn": "1034-3288",
+      "isbn": "0 7246 4144 0",
+      "pages": "69 numbered pages (74 PDF pages)",
+      "species": "Haliotis rubra (blacklip abalone); a few H. laevigata (greenlip abalone) also collected",
+      "study_area": "Bass Strait, Tasmania: Hogan Islands, Kent Islands, Babel Island, Cape Barren Island, Waterhouse Island and adjacent Tasmanian coast",
+      "study_period": "Field survey 31 May - 2 June 1988",
+      "relation_to_dataset": "Original source of the UCI Abalone dataset (donated by Sam Waugh in 1995; also distributed on Kaggle and on Hugging Face as mstz/abalone).",
+      "keywords": ["morphometrics", "length-weight relationship", "whole weight", "shucked weight", "viscera weight", "shell weight", "age", "growth rings", "von Bertalanffy", "Gompertz", "sexual maturity", "sex determination", "gonad", "fecundity", "cryptic and emergent abalone", "mortality", "catch curve", "yield per recruit", "egg per recruit", "size limit"],
+      "summary": [
+        "Measurements taken on every abalone (p. 8): whole weight, shucked meat weight, viscera weight, dry shell weight (dried to constant weight at 90 C), maximum shell length, minimum shell length and vertical shell height. These are the measurements of the UCI Abalone dataset.",
+        "Age = number of major growth rings + 1.5 years, following Prince et al. (1988a) (p. 9). The authors note the method has not been validated outside south-east Tasmania, and repeat analyses with 1 and 2 rings per year because studies in Victoria suggest a higher rate (McShane and Smith 1992).",
+        "Sex (male, female or immature) was determined by visual inspection of the intact gonad, with microscopic examination of uncertain cases (p. 10). Abalone were considered sexually differentiated if testis or ovary could be discerned; gonads that are only a thin veneer over the digestive gland are invariably immature (p. 11).",
+        "The Bass Strait populations are stunted. Growth is sigmoidal, so Gompertz as well as von Bertalanffy curves were fitted (Table 4). Von Bertalanffy L-infinity ranges from 121.6 to 146.1 mm (sexes combined).",
+        "Length at 50% maturity ranges from 65.3 mm (Waterhouse I.) to 82.6 mm (Hogan Is.); age at 50% maturity from 8.0 to 9.9 years (Table 5). Within a ring class, mature abalone are always larger than immature abalone (Fig. 19).",
+        "Fecundity depends on size rather than age (Figs. 21-24). Total mortality Z ranges from 0.185 to 0.265 per year with one ring per year (Table 8).",
+        "Only 33-48% of shells could be aged because of shell damage by boring organisms (Table 3)."
+      ],
+      "source_pdf": "Nashetal1994AbaloneTechReport.pdf (scanned, no text layer)",
+      "processing": "OCR of each page image (Windows.Media.Ocr, en-US), then manual correction against the page images. All table values were cross-checked against the page images.",
+      "editorial_notes": [
+        "PDF page 5 is blank. Printed page N = PDF page N + 5.",
+        "Table 3: for Cape Barren I., the site sample sizes (415 + 362 + 89 = 866) do not add up to the printed total (909).",
+        "Table 3 totals: 4754 abalone sampled, of which 2064 female, 1827 male, 833 immature and 15 parasitised.",
+        "Fig. 14: the printed equation for Babel I. has a negative slope (-0.00135), but the plotted line rises and the text states that the slope is positive at Babel.",
+        "Section 3.3.1 says the logistic rate b is lowest in the Kent group (b = 0.628); in Table 5, b = 0.628 is Cape Barren I. and the lowest value is Kent Is. (b = 0.482).",
+        "Table 9: the Site column is handwritten on the scanned copy. For Babel I., Z1 is corrected by hand from 0.238 to 0.207 (matching Table 8) and the difference from 0.0 to 15.0%. The text on p. 42 ('no change for the Babel Island population') refers to the uncorrected printed values.",
+        "Section 3.5 cites Fig. 12 for the ageable and unageable fractions; the correct figure is Fig. 13.",
+        "Section 3.5 says the increase in Z ranged from 16.2% to 32.0%; Table 10 shows a maximum of 43.2% (Cape Barren I.).",
+        "Table 12C: some values break the increasing trend with F (Hogan, 1 ring: 98.0 at F = 0.8; Hogan, 2 rings: 98.0 at F = 2.0; Babel, 2 rings: 98.3 at F = 2.0); possibly errors in the original.",
+        "Section 4.3.2 cites 'Tables 15 and 16' and Section 4.5 cites 'Table 14'; no tables with these numbers exist in the report.",
+        "The reference list gives Prince et al. 1988a as pp. 167-177; the published pages are 167-175.",
+        "Handwritten annotations on the scanned copy: at the foot of p. 13 ('; in this case Pmax was included in the regression as the first data point.') and next to the title of Table 12 ('clear up', uncertain reading)."
+      ]
+    },
+    {
+      "id": "prince_et_al_1988_ageing",
+      "file": "02_Prince_et_al_1988_ageing_method.md",
+      "citation": "Prince, J. D., Sellers, T. L., Ford, W. B. and Talbot, S. R. (1988). A method for ageing the abalone Haliotis rubra (Mollusca: Gastropoda). Australian Journal of Marine and Freshwater Research 39, 167-175.",
+      "title": "A Method for Ageing the Abalone Haliotis rubra (Mollusca: Gastropoda)",
+      "authors": ["J. D. Prince", "T. L. Sellers", "W. B. Ford", "S. R. Talbot"],
+      "year": 1988,
+      "type": "journal article",
+      "journal": "Australian Journal of Marine and Freshwater Research",
+      "volume": 39,
+      "pages": "167-175",
+      "doi": "10.1071/MF9880167",
+      "species": "Haliotis rubra (blacklip abalone)",
+      "study_area": "Blubber Head, Port Esperance, southern Tasmania (43 deg 19 min S, 147 deg 04 min E)",
+      "study_period": "February 1984 - October 1985 (length frequencies); tagging January 1983 - February 1985; shells for ring counts August and October 1986",
+      "relation_to_dataset": "Describes the ring-counting method behind the Rings column of the UCI Abalone dataset and the basis of the rule age = rings + 1.5 years.",
+      "keywords": ["age determination", "growth rings", "spire", "nacre", "minor rings", "major rings", "age-length key", "length-frequency analysis", "Mix model", "von Bertalanffy", "tag recapture", "winter growth checks"],
+      "summary": [
+        "The spire of the shell is ground flat to expose a polished disc of nacre (10-15 mm), in which concentric rings are counted under a dissecting microscope (p. 170).",
+        "Three minor rings (0.02-0.05 mm thick) form at about 7.4, 11.4 and 15.7 months of age; the first major ring (0.05-0.15 mm, up to 0.3 mm) forms at about 20.6 months, and subsequent major rings at approximately annual intervals (32.7, 43.4, 59.2, 69.3, 79.8 and 89.3 months) (pp. 171-172).",
+        "Major rings form in winter (June-August), during the coldest water, not at spawning (September-November) (p. 172).",
+        "Minor rings may be lost when grinding large shells (>90 mm), so major and minor rings are counted separately (p. 171).",
+        "Growth below 80 mm is linear: A = 1.41 + 0.58 L (A in months, L in mm; r = 0.991, n = 16). Above 80 mm, von Bertalanffy with K = 0.024 per month and L-infinity = 139.7 mm, using t0 = 12.1 months (p. 171).",
+        "The interpretation appeared valid for Victorian and Tasmanian samples but may not apply in New South Wales, where no major rings were seen; the method should be validated for each stock (pp. 173-174)."
+      ],
+      "source_pdf": "Princeetal1988AbaloneAgeingTechnique.pdf (scanned, no text layer, poor image quality)",
+      "processing": "Text transcribed manually from the page images because automatic OCR quality was poor. Table 1 checked value by value against the page image.",
+      "editorial_notes": [
+        "The Methods say the February 1985 sample was not analysed because of its small size, but Table 1 includes February 1985 (n = 688). The companion paper (Prince et al. 1988, Marine Biology 100: 75-82) states that the February 1984 sample (n = 132) was not analysed.",
+        "Table 1: each row within a sample is one size mode estimated by the Mix model, in order of increasing mean length."
+      ]
+    },
+    {
+      "id": "prince_et_al_1988_marbiol",
+      "file": "03_Prince_et_al_1988_MarBiol_recruitment_growth_mortality.md",
+      "citation": "Prince, J. D., Sellers, T. L., Ford, W. B. and Talbot, S. R. (1988). Recruitment, growth, mortality and population structure in a southern Australian population of Haliotis rubra (Mollusca: Gastropoda). Marine Biology 100, 75-82.",
+      "title": "Recruitment, growth, mortality and population structure in a southern Australian population of Haliotis rubra (Mollusca: Gastropoda)",
+      "authors": ["J. D. Prince", "T. L. Sellers", "W. B. Ford", "S. R. Talbot"],
+      "year": 1988,
+      "type": "journal article",
+      "journal": "Marine Biology",
+      "volume": 100,
+      "pages": "75-82",
+      "doi": "10.1007/BF00392957",
+      "species": "Haliotis rubra (blacklip abalone)",
+      "study_area": "Blubber Head, Port Esperance, south-eastern Tasmania (43 deg 19 min S, 147 deg 04 min E)",
+      "study_period": "February 1984 - October 1985; breeding and emergence samples July 1986",
+      "relation_to_dataset": "Gives size and age at sexual maturity (relevant to the Infant category of the Sex column) and growth curves for the population in which the ageing method was validated.",
+      "keywords": ["recruitment", "growth", "natural mortality", "survivorship", "sexual maturity", "gonad index", "cryptic and emergent abalone", "population structure", "length-frequency analysis"],
+      "summary": [
+        "New recruits of 1-2 mm (30-45 days old) enter the population between October and February; a spawning season of August-January is inferred (pp. 77, 80).",
+        "Growth: L = 20.83 A - 2.46 below 80 mm (L in mm, A in years); above 80 mm, von Bertalanffy with K = 0.288 per year, L-infinity = 139.7 mm and t0 = 1.01 years (p. 78).",
+        "Natural mortality is about 0.70 per year in the second year of life (about 50% survival) and declines with age or size (Type III survivorship) (pp. 79-80).",
+        "Maturity was assessed with a gonad index (area of gonad in a cross-section of the visceral mass) and the presence of yolked eggs (p. 76). Maturity begins at about 90 mm (smallest abalone with free eggs in its gonad: 91 mm) and 4-5 years; most abalone are mature at >110 mm and 6-7 years (pp. 79, 81).",
+        "Abalone emerge from the cryptic sub-boulder habitat at about the onset of maturity; 80% of emergent abalone were larger than 90 mm (p. 79)."
+      ],
+      "source_pdf": "Princeetal.1988MarBiol.pdf (scanned, no text layer)",
+      "processing": "OCR of each page image with two-column separation, then manual correction against the page images.",
+      "editorial_notes": [
+        "The Discussion cites 'Harrison and Grand 1971'; the reference list gives Harrison and Grant (1971).",
+        "'Phyllospora ap.' in the Methods is a misprint for 'sp.'.",
+        "The reference list prints 'Littorana scutulata' (Littorina scutulata)."
+      ]
+    },
+    {
+      "id": "mcshane_smith_1992",
+      "file": "04_McShane_Smith_1992_shell_growth_checks.md",
+      "citation": "McShane, P. E. and Smith, M. G. (1992). Shell growth checks are unreliable indicators of age of the abalone Haliotis rubra (Mollusca: Gastropoda). Australian Journal of Marine and Freshwater Research 43, 1215-1219.",
+      "title": "Shell Growth Checks Are Unreliable Indicators of Age of the Abalone Haliotis rubra (Mollusca: Gastropoda)",
+      "authors": ["Paul E. McShane", "Murray G. Smith"],
+      "year": 1992,
+      "type": "journal article (short communication)",
+      "journal": "Australian Journal of Marine and Freshwater Research",
+      "volume": 43,
+      "pages": "1215-1219",
+      "doi": "10.1071/MF9921215",
+      "species": "Haliotis rubra (blacklip abalone)",
+      "study_area": "Victoria, Australia: Sandpatch, Tullaburga Island and Port Fairy",
+      "study_period": "Tagging 1985-87 (Sandpatch) and June 1986 (Port Fairy)",
+      "relation_to_dataset": "Challenges the assumption of one growth ring per year that underlies age = rings + 1.5 in the UCI Abalone dataset.",
+      "keywords": ["age validation", "growth checks", "growth rings", "tag recapture", "von Bertalanffy", "boring sponge", "Cliona", "Polydora", "selection bias"],
+      "summary": [
+        "Tag-recapture growth was compared with growth estimated from counts of spire growth checks in three Victorian populations; the checks were not formed annually (p. 1218).",
+        "Growth estimated from growth checks differed significantly from tag-recapture growth (ANCOVA: Sandpatch F = 65.8, P < 0.001; Tullaburga Island F = 7.8, P = 0.006) (p. 1216).",
+        "Growth-check counts underestimated growth at Sandpatch and overestimated growth of large (>80 mm) abalone at Tullaburga Island (pp. 1216-1217).",
+        "Many shells could not be read because of damage by boring sponges (Cliona spp.) and polychaetes (Polydora spp.): 84 of 268 usable at Tullaburga Island, 59 of 128 at Sandpatch, none at Port Fairy (p. 1216).",
+        "Only clean shells, typically from fast-growing cryptic individuals, can be counted, which biases growth-check studies; validation is required for each population (p. 1218).",
+        "Von Bertalanffy parameters from tag recapture are given in Table 1 (p. 1217)."
+      ],
+      "source_pdf": "McShaneandSmithMFWR1992shellageing.pdf (scanned, with an older OCR text layer)",
+      "processing": "Re-OCR of each page image (Windows.Media.Ocr, en-US), then manual correction against the page images.",
+      "editorial_notes": []
+    }
+  ],
+  "cross_document_notes": [
+    "Disagreement on ring periodicity: Prince et al. (1988a) found approximately annual major rings in southern Tasmania; McShane and Smith (1992) found that growth checks were not annual in Victoria; Nash et al. (1994, pp. 54-55) consider McShane and Smith's general conclusion premature and report that marginal increment analysis supports one layer per year in Tasmania.",
+    "Nash et al. (1994) cite the two Prince et al. papers as 1988a (ageing method, Aust. J. Mar. Freshwater Res.) and 1988b (Marine Biology)."
+  ]
+}
