@@ -1,0 +1,70 @@
+{
+  "builder_name": "csv",
+  "citation": "",
+  "config_name": "abalone",
+  "dataset_name": "abalone",
+  "dataset_size": 288213,
+  "description": "",
+  "download_checksums": {
+    "hf://datasets/mstz/abalone@3f7aee9ca247e7b491a84390817e1934f270fdc7/abalone/train.csv": {
+      "num_bytes": 191978,
+      "checksum": null
+    }
+  },
+  "download_size": 191978,
+  "features": {
+    "sex": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "length": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "diameter": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "height": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "whole_weight": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "shucked_weight": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "viscera_weight": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "shell_weight": {
+      "dtype": "float64",
+      "_type": "Value"
+    },
+    "number_of_rings": {
+      "dtype": "int64",
+      "_type": "Value"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 480191,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 288213,
+      "num_examples": 4177,
+      "dataset_name": "abalone"
+    }
+  },
+  "version": {
+    "version_str": "0.0.0",
+    "major": 0,
+    "minor": 0,
+    "patch": 0
+  }
+}
