@@ -1,0 +1,368 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_sex_agent_a",
+  "name": "Abalone Sex Debater A (non-linear and rules lens)",
+  "version": "0.1.0",
+  "description": "Debates the sex of one abalone with a Random Forest and the expert maturity rules: thresholds and interactions.",
+  "enabled": true,
+  "role": {
+    "type": "specialist",
+    "permissions": {
+      "can_receive_tasks": true,
+      "can_use_tools": true,
+      "can_use_expert_tools": true,
+      "can_use_rag": false,
+      "can_use_data_knowledge": false,
+      "can_write_external": false,
+      "can_finish_task": false
+    },
+    "reports_to": "abalone_debate_consolidator_agent"
+  },
+  "prompt": {
+    "template_format": "mustache",
+    "template": "# ROLE\n{{role}}\n\n# CORE MISSION\n{{task}}\n\n# PROBLEM CONTEXT (BLACKBOARD)\n{{inputs}}\n\n# NON-NEGOTIABLE RULES\n{{rules}}\n\n# ASSIGNED TOOLS\n{{tools}}\n\n# REQUIRED OUTPUT FORMAT\n{{output_format}}",
+    "role": "You are a data scientist who judges the sex of an abalone through two lenses: a Random Forest that captures non-linear interactions among the shell measurements, and expert maturity rules that decide infant vs adult with readable thresholds. You defend what these two tools show, and you change your mind only when other participants bring evidence your tools cannot refute.",
+    "task": "Estimate the sex of the abalone described in problem_spec and debate it with the other participants listed in debate_state: another agent with two different tools for the same task, and four experts who each read only one source article. Do what debate_state asks for the current round.",
+    "rules": [
+      "Send the tools only the values under 'Measurements for the tool agents (dataset units)', exactly as written, as one specimen: {\"specimens\": [{...}]}. Never send the original-unit values, and never send 'sex': it is what the tools predict.",
+      "In round 1 call each of your two tools once before answering. In later rounds do not call them again unless a challenge points to something their earlier results did not cover.",
+      "Infant vs adult is the reliable part (about 80% on hold-out data); male vs female is near chance (about 52-55% among adults). Never answer M or F when a tool flags mf_ambiguous or the maturity rules abstain on M/F: answer adult_undetermined.",
+      "maturity_uncertain, out_of_distribution and out_of_profile lower the reliability; say which flag did it. Flags are facts from the tools and are not negotiable.",
+      "Quote numbers only from tool results (probabilities, fired rule, intervals, hold-out metrics in model_card); never invent a figure. Each claim's evidence names the tool and the value it returned.",
+      "Change your position only when another participant cites evidence your tools cannot refute, and name the value that changed your mind. Never concede just to reach agreement: an honest disagreement is a valid outcome.",
+      "Article experts cite their article: treat their claims as evidence on how your tools' assumptions hold for this population, not as a replacement for your tools.",
+      "Follow 'What to do in this round' in debate_state, and leave the arrays the round does not ask for empty.",
+      "Write in English. Respond strictly with the JSON format in REQUIRED OUTPUT FORMAT."
+    ],
+    "inputs": [
+      {
+        "name": "problem_spec",
+        "type": "string",
+        "required": true,
+        "description": "English problem statement rendered from one CSV row: dataset values for the tool agents, original units for the experts."
+      },
+      {
+        "name": "debate_state",
+        "type": "string",
+        "required": true,
+        "description": "Written by the runtime before each turn: round, what to do, participants, positions, claims and challenges."
+      }
+    ],
+    "tools": {
+      "render": "auto_from_bindings",
+      "description": "MCP tools served only to this agent by code/agent_mcp_server.py.",
+      "usage_policy": [
+        "Round 1: abalone_sex_maturity_rules for the infant vs adult verdict and the rule that fired, then abalone_sex_random_forest for the probabilities.",
+        "Carry every tool warning into markdown_summary."
+      ]
+    },
+    "output_format": {
+      "type": "json",
+      "schema": {
+        "type": "object",
+        "required": [
+          "status",
+          "result",
+          "warnings"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed"
+            ]
+          },
+          "result": {
+            "type": "object",
+            "required": [
+              "position",
+              "claims",
+              "reviews",
+              "responses",
+              "markdown_summary"
+            ],
+            "properties": {
+              "position": {
+                "type": "object",
+                "required": [
+                  "maturity",
+                  "sex_call",
+                  "reliability",
+                  "rationale"
+                ],
+                "properties": {
+                  "maturity": {
+                    "type": "string",
+                    "enum": [
+                      "infant",
+                      "adult",
+                      "uncertain"
+                    ]
+                  },
+                  "sex_call": {
+                    "type": "string",
+                    "enum": [
+                      "M",
+                      "F",
+                      "I",
+                      "adult_undetermined",
+                      "undetermined"
+                    ]
+                  },
+                  "reliability": {
+                    "type": "string",
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "description": "One or two sentences with the tool values behind the position."
+                  }
+                }
+              },
+              "claims": {
+                "type": "array",
+                "maxItems": 4,
+                "description": "Round 1 only: your claims about the specimen or about a tool's assumptions.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "text",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "evidence": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Tool name and the value it returned, e.g. 'abalone_sex_maturity_rules: DEFAULT rule, adult'.",
+                      "minItems": 1
+                    }
+                  }
+                }
+              },
+              "reviews": {
+                "type": "array",
+                "maxItems": 3,
+                "description": "Challenge rounds only: confirm or challenge claims of other participants, by claim id.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "claim_id",
+                    "verdict",
+                    "reason",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "claim_id": {
+                      "type": "string",
+                      "description": "Id from debate_state, e.g. R1-SEX_B-2."
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "confirm",
+                        "challenge"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "evidence": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Tool name and the value it returned, e.g. 'abalone_sex_maturity_rules: DEFAULT rule, adult'.",
+                      "minItems": 1
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "type": "array",
+                "description": "Reply rounds only: one response per challenge addressed to you.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "challenge_id",
+                    "action",
+                    "text",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "challenge_id": {
+                      "type": "string",
+                      "description": "Id from debate_state, e.g. C2."
+                    },
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "defend",
+                        "concede",
+                        "clarify"
+                      ]
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "evidence": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Tool name and the value it returned, e.g. 'abalone_sex_maturity_rules: DEFAULT rule, adult'."
+                    }
+                  }
+                }
+              },
+              "markdown_summary": {
+                "type": "string",
+                "description": "2-5 lines for the blackboard, in English."
+              }
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "tool_id": "abalone_sex_random_forest",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Purpose: P(M), P(F), P(I) from non-linear interactions among the 8 inputs; p_adult = P(M) + P(F). Use: first call of round 1, for the adult probability. Not for: deciding M vs F (near chance) or repeating a call with the same values. Read: mf_ambiguous -> adult_undetermined; maturity_uncertain -> low reliability; hold-out infant vs adult accuracy about 82%.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 10
+    }
+  ],
+  "expert_tools": [
+    {
+      "tool_id": "abalone_sex_maturity_rules",
+      "enabled": true,
+      "access": "mcp",
+      "usage_hint": "Purpose: a transparent infant vs adult verdict from two thresholds on shell_weight, diameter and number_of_rings. Use: in round 1; quote the rule that fired. Not for: male vs female (it abstains by design). Read: R1 or R2 -> infant; DEFAULT -> adult with sex undetermined; hold-out infant vs adult accuracy about 81%.",
+      "requires_approval": false,
+      "max_calls_per_task": 2,
+      "timeout_s": 5
+    }
+  ],
+  "knowledge": {
+    "rag": {
+      "enabled": false
+    },
+    "data_knowledge": {
+      "enabled": false
+    }
+  },
+  "model": {
+    "provider": "ollama",
+    "deployment": "local",
+    "model_name": "gemma4:e4b",
+    "connection": {
+      "base_url": "http://localhost:11434",
+      "api_key_env": null,
+      "timeout_s": 900,
+      "max_retries": 1,
+      "headers": {},
+      "proxy_env": null
+    },
+    "parameters": {
+      "temperature": 0.1,
+      "top_p": null,
+      "max_tokens": 2048,
+      "stop": [],
+      "seed": 42
+    },
+    "capabilities": {
+      "tool_calling": true,
+      "structured_output": true,
+      "streaming": false,
+      "vision": false
+    },
+    "billing": {
+      "paid": false,
+      "currency": "USD"
+    },
+    "fallback": []
+  },
+  "memory": {
+    "short_term": {
+      "enabled": true,
+      "backend": "memory",
+      "path": null,
+      "max_messages": 20
+    },
+    "long_term": {
+      "enabled": false
+    }
+  },
+  "guardrails": {
+    "disclaimer": "Statistical estimate from shell measurements, debated with the source literature; not a biological determination.",
+    "sensitive_data": {
+      "redact_in_logs": true,
+      "allowed_identifiers": []
+    },
+    "human_in_the_loop": {
+      "enabled": false
+    },
+    "forbidden_actions": [
+      "Call tools that are not in this declaration",
+      "Retrain or modify the models behind the tools",
+      "Invent tool values, probabilities or metrics",
+      "Write blackboard sections other than its own"
+    ],
+    "output_validation": {
+      "enforce_schema": true,
+      "on_failure": "retry",
+      "max_retries": 2
+    }
+  },
+  "runtime": {
+    "max_iterations": 4,
+    "timeout_s": 1800,
+    "parallel_tool_calls": false,
+    "streaming": false,
+    "adapters": {
+      "ollama": {
+        "num_ctx": 32768,
+        "think": false,
+        "keep_alive": "30m"
+      }
+    }
+  },
+  "observability": {
+    "log_level": "INFO",
+    "tracing": {
+      "enabled": false,
+      "provider": "none"
+    }
+  },
+  "metadata": {
+    "owner": "Task-Driven Harness",
+    "created_at": "2026-10-23",
+    "updated_at": "2026-10-23",
+    "tags": [
+      "abalone",
+      "sex_classification",
+      "debate",
+      "non_linear",
+      "rules"
+    ]
+  }
+}

@@ -1,0 +1,313 @@
+{
+  "$schema_description": "Conversational Flow Graph Specification for the Task-Driven ML Harness",
+  "header": {
+    "flow_id": "flow_abalone_age_debate_v1",
+    "name": "Abalone Age Debate: Tool Agents and Article Experts",
+    "version": "0.1.0",
+    "author": "Task-Driven Harness Architecture",
+    "description": "Estimates the ring count of one abalone through a panel debate. Two tool agents, each limited to two MCP tools of its own, and four article experts, each limited to one source article, give opinions, challenge each other with evidence and reply, round by round on the blackboard. A read-only arbiter decides with the full ledger.",
+    "graph_properties": {
+      "is_cyclic": true,
+      "supports_bidirectional_dialogue": true,
+      "loop_prevention_mechanism": "A ring of six speakers; one pass per round. Round 1 opinions, round 2 challenges, round 3 replies, and at most one extra challenge/reply cycle (max_cycle_iterations 4 = 5 rounds). global_max_turns counts model turns; max_visits bounds each speaker. Speakers with no work in a round pass without a model call.",
+      "blackboard_integration": "Each participant reads problem_spec and debate_state and appends one subsection per round to its own section. The runtime writes problem_spec, debate_state (before every turn) and debate_ledger (before the arbiter), as infer.py writes problem_spec."
+    }
+  },
+  "problem_spec_contract": {
+    "description": "Written by code/runtime/run_debate.py from one CSV row: an English statement with the dataset values for the tool agents and the original units (x200) for the experts. 'number_of_rings' is the unknown and never reaches the agents.",
+    "schema": {
+      "type": "object",
+      "required": [
+        "task",
+        "specimen"
+      ],
+      "properties": {
+        "task": {
+          "const": "age"
+        },
+        "specimen": {
+          "type": "object",
+          "required": [
+            "length",
+            "diameter",
+            "height",
+            "whole_weight",
+            "shucked_weight",
+            "viscera_weight",
+            "shell_weight",
+            "sex"
+          ],
+          "not": {
+            "required": [
+              "number_of_rings"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "blackboard_sections": [
+    {
+      "id": "debate_state",
+      "title": "Debate State (runtime)",
+      "placeholder": "*Written by the runtime before each turn...*",
+      "insert_after": "problem_spec"
+    },
+    {
+      "id": "age_debate_a",
+      "title": "Age Debate - Tool Agent A",
+      "placeholder": "*Pending...*",
+      "insert_after": "debate_state"
+    },
+    {
+      "id": "age_debate_b",
+      "title": "Age Debate - Tool Agent B",
+      "placeholder": "*Pending...*",
+      "insert_after": "age_debate_a"
+    },
+    {
+      "id": "lit_nash_1994",
+      "title": "Literature - Nash et al. 1994",
+      "placeholder": "*Pending...*",
+      "insert_after": "age_debate_b"
+    },
+    {
+      "id": "lit_prince_1988a",
+      "title": "Literature - Prince et al. 1988a",
+      "placeholder": "*Pending...*",
+      "insert_after": "lit_nash_1994"
+    },
+    {
+      "id": "lit_prince_1988b",
+      "title": "Literature - Prince et al. 1988b",
+      "placeholder": "*Pending...*",
+      "insert_after": "lit_prince_1988a"
+    },
+    {
+      "id": "lit_mcshane_1992",
+      "title": "Literature - McShane and Smith 1992",
+      "placeholder": "*Pending...*",
+      "insert_after": "lit_prince_1988b"
+    },
+    {
+      "id": "debate_ledger",
+      "title": "Debate Ledger (runtime)",
+      "placeholder": "*Written by the runtime before the consolidator...*",
+      "insert_after": "lit_mcshane_1992"
+    }
+  ],
+  "mcp_servers": {
+    "abalone_age_agent_a": {
+      "command": ".venv/bin/python",
+      "args": [
+        "code/agent_mcp_server.py",
+        "--agent",
+        "declarations/agents/abalone_age_agent_a.json"
+      ],
+      "description": "Only the two tools bound in this agent's declaration."
+    },
+    "abalone_age_agent_b": {
+      "command": ".venv/bin/python",
+      "args": [
+        "code/agent_mcp_server.py",
+        "--agent",
+        "declarations/agents/abalone_age_agent_b.json"
+      ],
+      "description": "Only the two tools bound in this agent's declaration."
+    },
+    "article_nash_1994_agent": {
+      "command": ".venv/bin/python",
+      "args": [
+        "code/article_mcp_server.py",
+        "--document-id",
+        "nash_et_al_1994_tr48"
+      ],
+      "description": "search_article and get_section bound to nash_et_al_1994_tr48 (Nash et al. 1994)."
+    },
+    "article_prince_1988a_agent": {
+      "command": ".venv/bin/python",
+      "args": [
+        "code/article_mcp_server.py",
+        "--document-id",
+        "prince_et_al_1988_ageing"
+      ],
+      "description": "search_article and get_section bound to prince_et_al_1988_ageing (Prince et al. 1988a)."
+    },
+    "article_prince_1988b_agent": {
+      "command": ".venv/bin/python",
+      "args": [
+        "code/article_mcp_server.py",
+        "--document-id",
+        "prince_et_al_1988_marbiol"
+      ],
+      "description": "search_article and get_section bound to prince_et_al_1988_marbiol (Prince et al. 1988b)."
+    },
+    "article_mcshane_1992_agent": {
+      "command": ".venv/bin/python",
+      "args": [
+        "code/article_mcp_server.py",
+        "--document-id",
+        "mcshane_smith_1992"
+      ],
+      "description": "search_article and get_section bound to mcshane_smith_1992 (McShane and Smith 1992)."
+    }
+  },
+  "global_guards": {
+    "global_max_turns": 32,
+    "execution_timeout_seconds": 14400,
+    "on_global_limit_action": "force_transition_to_terminal_node"
+  },
+  "entry_node": "abalone_age_agent_a",
+  "terminal_node": "abalone_debate_consolidator_agent",
+  "nodes": {
+    "abalone_age_agent_a": {
+      "agent_declaration": "declarations/agents/abalone_age_agent_a.json",
+      "role": "Tool Agent A",
+      "description": "Opens each round with its two tools (non-linear model and expert tool).",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": [
+          "problem_spec",
+          "debate_state"
+        ],
+        "write_section": "age_debate_a"
+      }
+    },
+    "abalone_age_agent_b": {
+      "agent_declaration": "declarations/agents/abalone_age_agent_b.json",
+      "role": "Tool Agent B",
+      "description": "Second voice with two different tools (linear model and expert tool); agrees or disagrees with A on evidence.",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": [
+          "problem_spec",
+          "debate_state"
+        ],
+        "write_section": "age_debate_b"
+      }
+    },
+    "article_nash_1994_agent": {
+      "agent_declaration": "declarations/agents/article_nash_1994_agent.json",
+      "role": "Article Expert (Nash et al. 1994)",
+      "description": "Contributes what Nash et al. 1994 says about the specimen and the tools' assumptions, or abstains.",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": [
+          "problem_spec",
+          "debate_state"
+        ],
+        "write_section": "lit_nash_1994"
+      }
+    },
+    "article_prince_1988a_agent": {
+      "agent_declaration": "declarations/agents/article_prince_1988a_agent.json",
+      "role": "Article Expert (Prince et al. 1988a)",
+      "description": "Contributes what Prince et al. 1988a says about the specimen and the tools' assumptions, or abstains.",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": [
+          "problem_spec",
+          "debate_state"
+        ],
+        "write_section": "lit_prince_1988a"
+      }
+    },
+    "article_prince_1988b_agent": {
+      "agent_declaration": "declarations/agents/article_prince_1988b_agent.json",
+      "role": "Article Expert (Prince et al. 1988b)",
+      "description": "Contributes what Prince et al. 1988b says about the specimen and the tools' assumptions, or abstains.",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": [
+          "problem_spec",
+          "debate_state"
+        ],
+        "write_section": "lit_prince_1988b"
+      }
+    },
+    "article_mcshane_1992_agent": {
+      "agent_declaration": "declarations/agents/article_mcshane_1992_agent.json",
+      "role": "Article Expert (McShane and Smith 1992)",
+      "description": "Contributes what McShane and Smith 1992 says about the specimen and the tools' assumptions, or abstains.",
+      "max_visits": 5,
+      "blackboard_permissions": {
+        "read_sections": [
+          "problem_spec",
+          "debate_state"
+        ],
+        "write_section": "lit_mcshane_1992"
+      }
+    },
+    "abalone_debate_consolidator_agent": {
+      "agent_declaration": "declarations/agents/abalone_debate_consolidator_agent.json",
+      "role": "Debate Arbiter",
+      "description": "Terminal node. Reads the ledger and every participant's section and writes the final answer.",
+      "max_visits": 1,
+      "blackboard_permissions": {
+        "read_sections": [
+          "problem_spec",
+          "debate_ledger"
+        ],
+        "write_section": "final_decision"
+      }
+    }
+  },
+  "edges": [
+    {
+      "edge_id": "edge_abalone_age_agent_a_to_abalone_age_agent_b",
+      "from": "abalone_age_agent_a",
+      "to": "abalone_age_agent_b",
+      "bidirectional": false,
+      "description": "Next speaker in the same round."
+    },
+    {
+      "edge_id": "edge_abalone_age_agent_b_to_article_nash_1994_agent",
+      "from": "abalone_age_agent_b",
+      "to": "article_nash_1994_agent",
+      "bidirectional": false,
+      "description": "Next speaker in the same round."
+    },
+    {
+      "edge_id": "edge_article_nash_1994_agent_to_article_prince_1988a_agent",
+      "from": "article_nash_1994_agent",
+      "to": "article_prince_1988a_agent",
+      "bidirectional": false,
+      "description": "Next speaker in the same round."
+    },
+    {
+      "edge_id": "edge_article_prince_1988a_agent_to_article_prince_1988b_agent",
+      "from": "article_prince_1988a_agent",
+      "to": "article_prince_1988b_agent",
+      "bidirectional": false,
+      "description": "Next speaker in the same round."
+    },
+    {
+      "edge_id": "edge_article_prince_1988b_agent_to_article_mcshane_1992_agent",
+      "from": "article_prince_1988b_agent",
+      "to": "article_mcshane_1992_agent",
+      "bidirectional": false,
+      "description": "Next speaker in the same round."
+    },
+    {
+      "edge_id": "edge_age_panel_round",
+      "from": "article_mcshane_1992_agent",
+      "to": "abalone_age_agent_a",
+      "bidirectional": false,
+      "description": "Next round of the panel: opinions, then challenges, then replies; one extra challenge/reply cycle at most.",
+      "loop_controls": {
+        "max_cycle_iterations": 4,
+        "continue_condition": "debate.next_round_needed == true AND cycle_count < max_cycle_iterations",
+        "exit_condition": "debate.next_round_needed == false",
+        "fallback_target": "abalone_debate_consolidator_agent"
+      }
+    },
+    {
+      "edge_id": "edge_age_panel_to_consolidator",
+      "from": "article_mcshane_1992_agent",
+      "to": "abalone_debate_consolidator_agent",
+      "bidirectional": false,
+      "description": "No round is left: hand the ledger to the arbiter.",
+      "transition_condition": "debate.next_round_needed == false"
+    }
+  ]
+}

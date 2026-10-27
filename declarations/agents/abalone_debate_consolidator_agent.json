@@ -1,0 +1,293 @@
+{
+  "schema_version": "1.0.0",
+  "id": "abalone_debate_consolidator_agent",
+  "name": "Abalone Debate Arbiter",
+  "version": "0.1.0",
+  "description": "Terminal reviewer of the Abalone debates. Reads the ledger of claims, challenges and replies , and issues the final sex or age answer with its reliability and the weight given to each participant.",
+  "enabled": true,
+  "role": {
+    "type": "reviewer",
+    "permissions": {
+      "can_receive_tasks": true,
+      "can_use_tools": false,
+      "can_use_expert_tools": false,
+      "can_use_rag": false,
+      "can_use_data_knowledge": false,
+      "can_write_external": false,
+      "can_finish_task": true
+    },
+    "reports_to": null
+  },
+  "prompt": {
+    "template_format": "mustache",
+    "template": "# ROLE\n{{role}}\n\n# CORE MISSION\n{{task}}\n\n# PROBLEM CONTEXT (BLACKBOARD)\n{{inputs}}\n\n# NON-NEGOTIABLE RULES\n{{rules}}\n\n# REQUIRED OUTPUT FORMAT\n{{output_format}}",
+    "role": "You are the lead data scientist who signs off the final answer of a debate. You work read-only: you call no tools and judge the debate recorded on the blackboard.",
+    "task": "For the abalone in problem_spec, give the final answer for the task (sex or age) with its reliability, using debate_ledger (every claim, challenge, reply, final position and abstention), and say for every participant whether you accepted its position and why.",
+    "rules": [
+      "The tool agents' evidence decides the answer; the article experts adjust the reliability and can stop a certainty the data do not support.",
+      "A claim whose challenge was conceded is discarded; an unanswered challenge weakens the challenged claim; for a defended challenge weigh both pieces of evidence and say which one you followed and why.",
+      "Sex task: if any tool flagged mf_ambiguous or the maturity rules abstained on M/F, the answer is adult_undetermined, not M or F. When the tool agents disagree on infant vs adult, maturity is 'uncertain' unless the ledger's evidence clearly favours one side.",
+      "Sex task: also fill forced_choice with the single most likely class (M, F or I) from the tools' probabilities, even when the answer is adult_undetermined; it is used only for benchmark scoring and does not change the answer.",
+      "Age task: answer with the median of the tool agents' ring estimates and the range covered by their 80% intervals; if the intervals do not overlap, call the specimen atypical with reliability low.",
+      "When the literature disagrees, the dataset's own population (Nash et al. 1994, Bass Strait, Tasmania) weighs more than studies of other places (southern Tasmania, Victoria).",
+      "debate_outcome: 'agreed' when the tool agents ended with the same answer and no challenge to them stayed defended or unanswered; 'resolved_by_evidence' when you settled a disagreement with the ledger's evidence; 'unresolved' otherwise.",
+      "Use only figures that appear on the blackboard; never invent probabilities, rings or metrics. Refer to participants by their codes (SEX_A, NASH_1994, ...), one entry per participant, abstained ones included.",
+      "Write in English. markdown_summary: the answer, its reliability and 3-6 lines on how the debate went. Respond strictly with the JSON format in REQUIRED OUTPUT FORMAT."
+    ],
+    "inputs": [
+      {
+        "name": "problem_spec",
+        "type": "string",
+        "required": true,
+        "description": "The specimen and the task."
+      },
+      {
+        "name": "debate_ledger",
+        "type": "string",
+        "required": true,
+        "description": "Every claim with its challenges, replies and status, the final positions and the abstentions (built by the runtime)."
+      }
+    ],
+    "tools": {
+      "render": "none",
+      "description": "No tools: this agent only reads the blackboard.",
+      "usage_policy": []
+    },
+    "output_format": {
+      "type": "json",
+      "schema": {
+        "type": "object",
+        "required": [
+          "status",
+          "result",
+          "warnings"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed"
+            ]
+          },
+          "result": {
+            "type": "object",
+            "required": [
+              "answer",
+              "reliability",
+              "debate_outcome",
+              "rationale",
+              "participants",
+              "markdown_summary"
+            ],
+            "properties": {
+              "answer": {
+                "type": "string",
+                "description": "Sex task: M, F, I, adult_undetermined or undetermined. Age task: rings with the 80% range, e.g. '11 rings (9-13), about 12.5 years'."
+              },
+              "sex_call": {
+                "type": "string",
+                "enum": [
+                  "M",
+                  "F",
+                  "I",
+                  "adult_undetermined",
+                  "undetermined"
+                ]
+              },
+              "maturity": {
+                "type": "string",
+                "enum": [
+                  "infant",
+                  "adult",
+                  "uncertain"
+                ]
+              },
+              "rings": {
+                "type": "number"
+              },
+              "rings_low": {
+                "type": "number"
+              },
+              "rings_high": {
+                "type": "number"
+              },
+              "reliability": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              "debate_outcome": {
+                "type": "string",
+                "enum": [
+                  "agreed",
+                  "resolved_by_evidence",
+                  "unresolved"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              },
+              "participants": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "participant",
+                    "final_position",
+                    "weight",
+                    "why"
+                  ],
+                  "properties": {
+                    "participant": {
+                      "type": "string"
+                    },
+                    "final_position": {
+                      "type": "string"
+                    },
+                    "weight": {
+                      "type": "string",
+                      "enum": [
+                        "accepted",
+                        "partly_accepted",
+                        "discounted",
+                        "abstained"
+                      ]
+                    },
+                    "why": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "markdown_summary": {
+                "type": "string"
+              },
+              "forced_choice": {
+                "type": "string",
+                "enum": [
+                  "M",
+                  "F",
+                  "I"
+                ],
+                "description": "Sex task only: the single most likely class from the tools' probabilities, even when the answer is adult_undetermined. Used only to score against benchmarks that need one class; it is not the answer."
+              }
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tools": [],
+  "expert_tools": [],
+  "knowledge": {
+    "rag": {
+      "enabled": false
+    },
+    "data_knowledge": {
+      "enabled": false
+    }
+  },
+  "model": {
+    "provider": "ollama",
+    "deployment": "local",
+    "model_name": "gemma4:e4b",
+    "connection": {
+      "base_url": "http://localhost:11434",
+      "api_key_env": null,
+      "timeout_s": 900,
+      "max_retries": 1,
+      "headers": {},
+      "proxy_env": null
+    },
+    "parameters": {
+      "temperature": 0.1,
+      "top_p": null,
+      "max_tokens": 3072,
+      "stop": [],
+      "seed": 42
+    },
+    "capabilities": {
+      "tool_calling": false,
+      "structured_output": true,
+      "streaming": false,
+      "vision": false
+    },
+    "billing": {
+      "paid": false,
+      "currency": "USD"
+    },
+    "fallback": []
+  },
+  "memory": {
+    "short_term": {
+      "enabled": true,
+      "backend": "memory",
+      "path": null,
+      "max_messages": 20
+    },
+    "long_term": {
+      "enabled": false
+    }
+  },
+  "guardrails": {
+    "disclaimer": "Final answers are statistical estimates from shell measurements weighed against the source literature, not biological determinations.",
+    "sensitive_data": {
+      "redact_in_logs": true,
+      "allowed_identifiers": []
+    },
+    "human_in_the_loop": {
+      "enabled": false
+    },
+    "forbidden_actions": [
+      "Call tools or modify artifacts",
+      "Invent figures absent from the blackboard",
+      "Overwrite sections of the blackboard other than final_decision"
+    ],
+    "output_validation": {
+      "enforce_schema": true,
+      "on_failure": "retry",
+      "max_retries": 2
+    }
+  },
+  "runtime": {
+    "max_iterations": 1,
+    "timeout_s": 1800,
+    "parallel_tool_calls": false,
+    "streaming": false,
+    "adapters": {
+      "ollama": {
+        "num_ctx": 32768,
+        "think": false,
+        "keep_alive": "30m"
+      }
+    }
+  },
+  "observability": {
+    "log_level": "INFO",
+    "tracing": {
+      "enabled": false,
+      "provider": "none"
+    }
+  },
+  "metadata": {
+    "owner": "Task-Driven Harness",
+    "created_at": "2026-10-23",
+    "updated_at": "2026-10-23",
+    "tags": [
+      "abalone",
+      "reviewer",
+      "consolidator",
+      "debate"
+    ]
+  }
+}

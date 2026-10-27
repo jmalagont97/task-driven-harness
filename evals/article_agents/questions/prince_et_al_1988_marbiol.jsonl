@@ -1,0 +1,18 @@
+{"id": "prb-01", "question": "When do new recruits enter the population?", "lang": "en", "expect": "covered", "must_contain": ["October and February"]}
+{"id": "prb-02", "question": "natural mortality during the second year of life", "lang": "en", "expect": "covered", "must_contain": ["0.70"]}
+{"id": "prb-03", "question": "size and age at the onset of sexual maturity", "lang": "en", "expect": "covered", "must_contain": ["90 mm"]}
+{"id": "prb-04", "question": "von Bertalanffy growth constant K above 80 mm", "lang": "en", "expect": "covered", "must_contain": ["0.288"]}
+{"id": "prb-05", "question": "emergence of abalone from the sub-boulder habitat", "lang": "en", "expect": "covered", "must_contain": ["emerge"]}
+{"id": "prb-06", "question": "smallest abalone with free eggs in the gonad", "lang": "en", "expect": "covered", "must_contain": ["91 mm", "91"]}
+{"id": "prb-07", "question": "inferred spawning season", "lang": "en", "expect": "covered", "must_contain": ["August"]}
+{"id": "prb-08", "question": "How was maturity assessed with a gonad index?", "lang": "en", "expect": "covered", "must_contain": ["gonad index"]}
+{"id": "prb-09", "question": "Does natural mortality decline with age?", "lang": "en", "expect": "covered", "must_contain": ["declined"]}
+{"id": "prb-10", "question": "linear growth equation below 80 mm in years", "lang": "en", "expect": "covered", "must_contain": ["20.83"]}
+{"id": "prb-out-1", "question": "shell growth checks unreliable in Victoria at Sandpatch", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "prb-out-2", "question": "yield per recruit and size limits in Bass Strait", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "prb-out-3", "question": "length at 50% maturity at the Hogan Islands", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "prb-out-4", "question": "chocolate cake recipe", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "prb-out-5", "question": "abalone viral disease outbreaks in farms", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "prb-es-1", "question": "¿Cuál es la mortalidad natural en el segundo año de vida?", "lang": "es", "expect": "covered", "must_contain": ["0.70"]}
+{"id": "prb-es-2", "question": "¿A qué talla empiezan a madurar sexualmente?", "lang": "es", "expect": "covered", "must_contain": ["90 mm"]}
+{"id": "prb-es-3", "question": "¿Cuándo entran los nuevos reclutas a la población?", "lang": "es", "expect": "covered", "must_contain": ["October and February"]}

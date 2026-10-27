@@ -1,0 +1,18 @@
+{"id": "nash-01", "question": "How was age calculated from the number of growth rings?", "lang": "en", "expect": "covered", "must_contain": ["plus 1.5 years"]}
+{"id": "nash-02", "question": "length at 50% maturity at the Hogan Islands", "lang": "en", "expect": "covered", "must_contain": ["82.6"]}
+{"id": "nash-03", "question": "range of age at 50 percent maturity across areas", "lang": "en", "expect": "covered", "must_contain": ["8.0 to 9.9"]}
+{"id": "nash-04", "question": "How was the sex of each abalone determined?", "lang": "en", "expect": "covered", "must_contain": ["gonad"]}
+{"id": "nash-05", "question": "What proportion of the shells could be aged?", "lang": "en", "expect": "covered", "must_contain": ["33 to 46 percent"]}
+{"id": "nash-06", "question": "total mortality Z estimates with one ring per year", "lang": "en", "expect": "covered", "must_contain": ["0.185"]}
+{"id": "nash-07", "question": "von Bertalanffy L-infinity for sexes combined", "lang": "en", "expect": "covered", "must_contain": ["146.1", "121.6"]}
+{"id": "nash-08", "question": "How was the shell weight measured after drying?", "lang": "en", "expect": "covered", "must_contain": ["constant weight"]}
+{"id": "nash-09", "question": "Does fecundity depend on size or on age?", "lang": "en", "expect": "covered", "must_contain": ["fecundity"]}
+{"id": "nash-10", "question": "Are mature abalone larger than immature abalone of the same ring count?", "lang": "en", "expect": "covered", "must_contain": ["immature"]}
+{"id": "nash-out-1", "question": "growth checks of tagged abalone at Port Fairy and Sandpatch in Victoria", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "nash-out-2", "question": "abalone aquaculture feed formulations in China", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "nash-out-3", "question": "chocolate cake recipe", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "nash-out-4", "question": "anaesthetic sampling of new recruits at Blubber Head", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "nash-out-5", "question": "genetic sequencing of abalone populations with microsatellites", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "nash-es-1", "question": "¿A qué talla alcanzan la madurez sexual los abulones en las islas Hogan?", "lang": "es", "expect": "covered", "must_contain": ["82.6"]}
+{"id": "nash-es-2", "question": "¿Cómo se calculó la edad a partir de los anillos de crecimiento?", "lang": "es", "expect": "covered", "must_contain": ["plus 1.5 years"]}
+{"id": "nash-es-3", "question": "¿Cómo se determinó el sexo de cada abulón?", "lang": "es", "expect": "covered", "must_contain": ["gonad"]}

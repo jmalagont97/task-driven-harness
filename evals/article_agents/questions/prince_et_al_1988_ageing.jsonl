@@ -1,0 +1,18 @@
+{"id": "pra-01", "question": "How is the shell spire prepared to count the rings?", "lang": "en", "expect": "covered", "must_contain": ["ground"]}
+{"id": "pra-02", "question": "At what age is the first major ring deposited?", "lang": "en", "expect": "covered", "must_contain": ["20.6"]}
+{"id": "pra-03", "question": "In which season are the major rings formed?", "lang": "en", "expect": "covered", "must_contain": ["June-August", "coldest water"]}
+{"id": "pra-04", "question": "ages at which the three minor rings form", "lang": "en", "expect": "covered", "must_contain": ["7.4"]}
+{"id": "pra-05", "question": "linear growth equation for abalone below 80 mm", "lang": "en", "expect": "covered", "must_contain": ["0.58"]}
+{"id": "pra-06", "question": "von Bertalanffy growth parameters K and L-infinity", "lang": "en", "expect": "covered", "must_contain": ["139.7"]}
+{"id": "pra-07", "question": "Is the ageing method valid for New South Wales abalone?", "lang": "en", "expect": "covered", "must_contain": ["New South Wales"]}
+{"id": "pra-08", "question": "Why can minor rings be missing in large shells?", "lang": "en", "expect": "covered", "must_contain": ["90 mm"]}
+{"id": "pra-09", "question": "How many abalone were tagged and released?", "lang": "en", "expect": "covered", "must_contain": ["705"]}
+{"id": "pra-10", "question": "Where was the field work carried out?", "lang": "en", "expect": "covered", "must_contain": ["Blubber Head"]}
+{"id": "pra-out-1", "question": "length at 50% maturity at Waterhouse Island", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "pra-out-2", "question": "egg per recruit and yield per recruit under different size limits", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "pra-out-3", "question": "ANCOVA of growth checks at Tullaburga Island", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "pra-out-4", "question": "chocolate cake recipe", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "pra-out-5", "question": "abalone market prices in Japan", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "pra-es-1", "question": "¿En qué época del año se forman los anillos mayores?", "lang": "es", "expect": "covered", "must_contain": ["June-August", "coldest water"]}
+{"id": "pra-es-2", "question": "¿A qué edad se forma el primer anillo mayor?", "lang": "es", "expect": "covered", "must_contain": ["20.6"]}
+{"id": "pra-es-3", "question": "¿Cómo se prepara la concha para contar los anillos?", "lang": "es", "expect": "covered", "must_contain": ["ground"]}

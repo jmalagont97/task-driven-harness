@@ -1,0 +1,18 @@
+{"id": "mcs-01", "question": "Are shell growth checks formed every year?", "lang": "en", "expect": "covered", "must_contain": ["not annual"]}
+{"id": "mcs-02", "question": "ANCOVA result comparing growth checks and tag recapture at Sandpatch", "lang": "en", "expect": "covered", "must_contain": ["65.8"]}
+{"id": "mcs-03", "question": "How many shells could be read at Tullaburga Island?", "lang": "en", "expect": "covered", "must_contain": ["84 of 268", "84"]}
+{"id": "mcs-04", "question": "Which organisms damaged the shells?", "lang": "en", "expect": "covered", "must_contain": ["Cliona"]}
+{"id": "mcs-05", "question": "How were the tags attached to the shells?", "lang": "en", "expect": "covered", "must_contain": ["superglue", "cyanoacrylate"]}
+{"id": "mcs-06", "question": "Do growth-check counts overestimate the growth of large abalone?", "lang": "en", "expect": "covered", "must_contain": ["overestimate"]}
+{"id": "mcs-07", "question": "Which shells could be used reliably for growth checks?", "lang": "en", "expect": "covered", "must_contain": ["clean"]}
+{"id": "mcs-08", "question": "Which populations were studied?", "lang": "en", "expect": "covered", "must_contain": ["Port Fairy"]}
+{"id": "mcs-09", "question": "How long were tagged individuals at liberty?", "lang": "en", "expect": "covered", "must_contain": ["138"]}
+{"id": "mcs-10", "question": "What did Shepherd find for growth checks of H. laevigata?", "lang": "en", "expect": "covered", "must_contain": ["two growth checks"]}
+{"id": "mcs-out-1", "question": "length at 50% maturity at Babel Island", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "mcs-out-2", "question": "natural mortality of juveniles in their second year", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "mcs-out-3", "question": "fecundity and egg per recruit", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "mcs-out-4", "question": "chocolate cake recipe", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "mcs-out-5", "question": "sex determination by gonad inspection", "lang": "en", "expect": "not_covered", "must_contain": []}
+{"id": "mcs-es-1", "question": "¿Las marcas de crecimiento de la concha se forman una vez al año?", "lang": "es", "expect": "covered", "must_contain": ["not annual"]}
+{"id": "mcs-es-2", "question": "¿Qué organismos dañaban las conchas?", "lang": "es", "expect": "covered", "must_contain": ["Cliona"]}
+{"id": "mcs-es-3", "question": "¿Qué poblaciones se estudiaron?", "lang": "es", "expect": "covered", "must_contain": ["Port Fairy"]}

@@ -1,0 +1,15 @@
+# Extra dependencies for the debate runtime (code/runtime/), the scoped and article MCP servers
+# (code/agent_mcp_server.py, code/article_mcp_server.py) and the article RAG index (code/tools/article_rag/).
+# Install on top of the base requirements:
+#   .venv/bin/python -m pip install -r requirements-agents-ollama.txt
+-r requirements-abalone-tools.txt
+
+# HTTP client for the local Ollama API (chat and embeddings). The MCP SDK already pulls it in; it is declared here
+# because the runtime and the article index import it directly.
+httpx>=0.27
+
+# Vector store of the article index (persistent client, HNSW). Same version as chimera-agent-baseline. numpy and
+# scikit-learn stay at the versions the Abalone models were trained with.
+chromadb==1.5.9
+numpy==1.26.4
+scikit-learn==1.4.2
